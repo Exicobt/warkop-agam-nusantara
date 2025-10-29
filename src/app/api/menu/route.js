@@ -1,5 +1,4 @@
 import { PrismaClient } from "@prisma/client";
-import toast from "react-hot-toast";
 
 const prisma = new PrismaClient()
 
