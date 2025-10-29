@@ -1,37 +1,75 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# 🧾 Aplikasi Kasir - Next.js + Prisma + MySQL
 
-## Getting Started
 
-First, run the development server:
 
+## 🚀 1. Clone Repository
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/Exicobt/aplikasi-kasir.git
+cd aplikasi-kasir
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## 📦 2. Install Dependensi
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## ⚙️ 3. Konfigurasi Environment
 
-To learn more about Next.js, take a look at the following resources:
+### Buat file `.env` di root folder
+Isi dengan konfigurasi database MySQL kamu:
+```bash
+DATABASE_URL="mysql://USER:PASSWORD@localhost:3306/NAMA_DATABASE"
+```
+> Ganti `USER`, `PASSWORD`, dan `NAMA_DATABASE` sesuai konfigurasi MySQL kamu.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Buat file `.env.local`
+File ini digunakan untuk menyimpan **JWT Secret Key** (untuk autentikasi).
+```bash
+JWT_SECRET="xIrtrCeSrGJy7KJm3ub5Ej2fe1CYU9Pyyk6BhvYsdS0"
+```
+> Kamu bisa membuat JWT Secret baru dengan perintah:
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+> ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## 🗃️ 4. Import Database SQL
+Masuk ke folder `script/db_warkop.sql`, lalu import file SQL tersebut ke MySQL.
+Kamu bisa menggunakan **phpMyAdmin** atau **MySQL CLI**.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Contoh dengan MySQL CLI:
+```bash
+mysql -u USER -p NAMA_DATABASE < script/db_warkop.sql
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-# aplikasi-kasir
+---
+
+## 🧩 5. Generate Prisma Client
+```bash
+npx prisma generate
+```
+
+---
+
+## 🧱 6. Jalankan Migrasi Database
+```bash
+npx prisma migrate dev --name init
+```
+
+---
+
+## 🖥️ 7. Jalankan Aplikasi
+```bash
+npm run dev
+```
+Lalu buka di browser:
+👉 [http://localhost:3000](http://localhost:3000)
+
+---
+
+
