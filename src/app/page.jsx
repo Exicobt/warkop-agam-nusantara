@@ -77,7 +77,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
           <div className="bg-highlight py-6 px-8 text-center">
-            <h1 className="text-2xl font-bold text-white">Kampus Kuphi</h1>
+            <h1 className="text-2xl font-bold text-white">Warkop Agam Nusantara</h1>
             <p className="text-indigo-100 mt-1">Silakan masuk ke akun Anda</p>
           </div>
 

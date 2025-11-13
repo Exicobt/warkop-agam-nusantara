@@ -1,6 +1,6 @@
 "use client";
 
-import { Plus, Search, Filter, Eye, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ListRestartIcon } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import Sidebar from "../components/Sidebar";
@@ -16,7 +16,7 @@ import {
 import { TableRow } from "@/app/components/ui/table";
 
 const Menu = () => {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("menu");
   const [menus, setMenus] = useState([]);
@@ -27,14 +27,54 @@ const Menu = () => {
       .then(async (res) => {
         const data = await res.json();
         setMenus(data);
+        setIsLoading(false);
       })
       .catch((err) => {
         console.error(err);
       });
   };
 
+  const deleteAllMenu = () => {
+    const fetchDelete = async () => {
+      await fetch("/api/deleteAllMenu", {
+        method: "POST",
+        headers: {
+          "Content-Type": "applications/json",
+        },
+      });
+    };
+    toast(
+      (t) => (
+        <span>
+          Anda yakin ingin mereset semua menu? Ini akan menghapus semua data
+          menu!
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={async () => {
+                toast.dismiss(t.id);
+                await fetchDelete();
+                toast.success("Berhasil mereset semua menu");
+              }}
+              className="bg-red-500 text-white px-3 py-1 rounded"
+            >
+              Ya
+            </button>
+            <button
+              onClick={() => toast.dismiss(t.id)}
+              className="bg-gray-300 px-3 py-1 rounded"
+            >
+              Batal
+            </button>
+          </div>
+        </span>
+      ),
+      {
+        duration: 10000,
+      }
+    );
+  };
+
   const deleteMenu = (item) => {
-    setIsLoading(true);
     const fetchDelete = async () => {
       await fetch("/api/menu", {
         method: "POST",
@@ -43,7 +83,7 @@ const Menu = () => {
         },
         body: JSON.stringify({
           menu_id: item.id,
-          action: 'delete'
+          action: "delete",
         }),
       });
     };
@@ -54,12 +94,11 @@ const Menu = () => {
           <div className="mt-2 flex gap-2">
             <button
               onClick={async () => {
-              toast.dismiss(t.id);
-              await fetchDelete();
-              await fetchMenu();
-              toast.success(`Berhasil menghapus ${item.nama}`);
-              setIsLoading(false);
-            }}
+                toast.dismiss(t.id);
+                await fetchDelete();
+                await fetchMenu();
+                toast.success(`Berhasil menghapus ${item.nama}`);
+              }}
               className="bg-red-500 text-white px-3 py-1 rounded"
             >
               Ya
@@ -97,13 +136,22 @@ const Menu = () => {
                 </h2>
                 <p className="text-gray-600">Kelola menu makanan dan minuman</p>
               </div>
-              <button
-                onClick={() => router.push("/dashboard/menu/tambah")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
-              >
-                <Plus className="w-4 h-4" />
-                Tambah Menu
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => deleteAllMenu()}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                >
+                  <ListRestartIcon />
+                  reset
+                </button>
+                <button
+                  onClick={() => router.push("/dashboard/menu/tambah")}
+                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                >
+                  <Plus className="w-4 h-4" />
+                  Tambah Menu
+                </button>
+              </div>
             </div>
 
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -122,83 +170,93 @@ const Menu = () => {
                 </div>
               </div>
 
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>No</TableHead>
-                      <TableHead>Menu</TableHead>
-                      <TableHead>Kategori</TableHead>
-                      <TableHead>Harga</TableHead>
-                      <TableHead className={'text-center'}>Aksi</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {menus
-                      .filter((menu) =>
-                        menu.nama
-                          .toLowerCase()
-                          .includes(searchTerm.toLowerCase())
-                      )
-                      .map((menu, index) => {
-                        return (
-                          <TableRow>
-                            <TableCell>{index+1}</TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-3">
-                                <Image
-                                  src={
-                                    menu.gambar ||
-                                    "https://placehold.co/1000x1000/png"
-                                  }
-                                  alt=""
-                                  width={100}
-                                  height={100}
-                                  className=""
-                                />
-                                <div>
-                                  <div className="font-semibold text-gray-800">
-                                    {menu.nama}
+              {isLoading ? (
+                <div className="w-full h-96 flex items-center justify-center">
+                  <div className="loader"></div>
+                </div>
+              ) : menus.length == 0 ? (
+                <div className="w-full h-96 flex items-center justify-center">
+                  TIdak ada menu yang tersedia
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>No</TableHead>
+                        <TableHead>Menu</TableHead>
+                        <TableHead>Kategori</TableHead>
+                        <TableHead>Harga</TableHead>
+                        <TableHead className={"text-center"}>Aksi</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {menus
+                        .filter((menu) =>
+                          menu.nama
+                            .toLowerCase()
+                            .includes(searchTerm.toLowerCase())
+                        )
+                        .map((menu, index) => {
+                          return (
+                            <TableRow>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-3">
+                                  <Image
+                                    src={
+                                      menu.gambar ||
+                                      "https://placehold.co/1000x1000/png"
+                                    }
+                                    alt=""
+                                    width={100}
+                                    height={100}
+                                    className=""
+                                  />
+                                  <div>
+                                    <div className="font-semibold text-gray-800">
+                                      {menu.nama}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-                                {menu.kategori}
-                              </span>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="font-semibold">
-                                  Rp {menu.harga.toLocaleString()}
+                              </TableCell>
+                              <TableCell>
+                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                  {menu.kategori}
+                                </span>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="font-semibold">
+                                    Rp {menu.harga.toLocaleString()}
+                                  </div>
                                 </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex justify-center items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    router.push(`menu/update/${menu.id}`);
-                                  }}
-                                  className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
-                                >
-                                  <Edit className="w-4 h-4" />
-                                </button>
-                                <button
-                                  onClick={() => deleteMenu(menu)}
-                                  className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                  </TableBody>
-                </Table>
-              </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex justify-center items-center gap-2">
+                                  <button
+                                    onClick={() => {
+                                      router.push(`menu/update/${menu.id}`);
+                                    }}
+                                    className="p-2 text-green-600 hover:bg-green-100 rounded-lg transition-colors"
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => deleteMenu(menu)}
+                                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg transition-colors"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
           </div>
         </div>
