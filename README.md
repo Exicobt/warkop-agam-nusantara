@@ -1,7 +1,5 @@
 # 🧾 Aplikasi Kasir - Next.js + Prisma + MySQL
 
-
-
 ## 🚀 1. Clone Repository
 ```bash
 git clone https://github.com/Exicobt/aplikasi-kasir.git
@@ -14,6 +12,16 @@ cd aplikasi-kasir
 ```bash
 npm install
 ```
+> Kamu bisa membuat JWT Secret baru dengan perintah:
+> ```bash
+> node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
+> ```
+
+---
+
+## 🗃️ 4. Import Database SQL
+Masuk ke folder `script/db_warkop.sql`, lalu import file SQL tersebut ke MySQL.
+Kamu bisa menggunakan **phpMyAdmin** atau **MySQL CLI**.
 
 ---
 
@@ -71,5 +79,4 @@ Lalu buka di browser:
 👉 [http://localhost:3000](http://localhost:3000)
 
 ---
-
 
