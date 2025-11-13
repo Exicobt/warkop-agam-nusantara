@@ -25,6 +25,8 @@ const Menu = () => {
   const [tables, setTables] = useState([]);
   const [selectTable, setSelectTable] = useState("");
   const [name, setName] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [paymentMethod, setPaymentMethod] = useState("");
 
   const nameRef = useRef();
 
@@ -65,6 +67,11 @@ const Menu = () => {
       return;
     }
 
+    if (!paymentMethod) {
+      toast.error("Pilih metode pembayaran terlebih dahulu");
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch("/api/cart", {
@@ -75,6 +82,7 @@ const Menu = () => {
           order_type_id: orderType === "Dine In" ? 1 : 2,
           name: name,
           table: selectTable ? selectTable : 0,
+          payment_method_id: parseInt(paymentMethod),
         }),
       });
 
@@ -91,6 +99,7 @@ const Menu = () => {
       setOrderType("Dine In");
       nameRef.current.value = "";
       setSelectTable("");
+      setPaymentMethod(""); // Pastikan reset paymentMethod juga
       fetchTable();
     } catch (error) {
       console.error(error);
@@ -111,7 +120,26 @@ const Menu = () => {
       }
     };
 
+    const fetchPaymentMethods = async () => {
+      try {
+        const res = await fetch("/api/payment");
+        const data = await res.json();
+        // PERBAIKAN: Coba akses properti 'paymentMethods' dari respons API
+        if (data && Array.isArray(data.paymentMethods)) {
+          setPaymentMethods(data.paymentMethods);
+        } else {
+          console.error("Data metode pembayaran bukan array:", data);
+          toast.error("Format data metode pembayaran salah dari API");
+          setPaymentMethods([]); // Set ke array kosong jika data salah
+        }
+      } catch (err) {
+        console.error("Gagal ambil metode pembayaran:", err);
+        toast.error("Gagal memuat metode pembayaran");
+      }
+    };
+
     fetchMenu();
+    fetchPaymentMethods();
   }, []);
 
   useEffect(() => {
@@ -141,8 +169,13 @@ const Menu = () => {
       await fetch("/api/table")
         .then(async (res) => {
           const data = await res.json();
-          setTables(data);
-          console.log(data);
+          // PERBAIKAN: Pastikan data adalah array
+          if (Array.isArray(data)) {
+            setTables(data);
+          } else {
+            console.error("Data meja bukan array:", data);
+            setTables([]); // Set ke array kosong jika data salah
+          }
         })
         .catch((err) => {
           console.error(err);
@@ -238,15 +271,33 @@ const Menu = () => {
                   <SelectValue placeholder="Pilih meja yang tersedia" />
                 </SelectTrigger>
                 <SelectContent>
-                  {tables
-                    .filter((table) => table.status === "available")
-                    .map((table) => {
-                      return (
-                        <SelectItem key={table.table_number} value={table.table_number}>
-                          Meja {table.table_number}
-                        </SelectItem>
-                      );
-                    })}
+                  {/* PERBAIKAN: Tambahkan pengecekan array */}
+                  {Array.isArray(tables) &&
+                    tables
+                      .filter((table) => table.status === "available")
+                      .map((table) => {
+                        return (
+                          // PERBAIKAN: Kode SelectItem yang hilang
+                          <SelectItem key={table.table_number} value={table.table_number}>
+                            Meja {table.table_number}
+                          </SelectItem>
+                        );
+                      })}
+                </SelectContent>
+              </Select>
+
+              <Select onValueChange={(val) => setPaymentMethod(val)} value={paymentMethod}>
+                <SelectTrigger className="w-full mt-2">
+                  <SelectValue placeholder="Pilih metode pembayaran" />
+                </SelectTrigger>
+                <SelectContent>
+                  {/* PERBAIKAN: Tambahkan pengecekan array */}
+                  {Array.isArray(paymentMethods) &&
+                    paymentMethods.map((method) => (
+                      <SelectItem key={method.id} value={String(method.id)}>
+                        {method.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -266,29 +317,32 @@ const Menu = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {allOrders.map((order, i) => (
-                      <TableRow key={i}>
-                        <TableCell className="capitalize font-medium text-left truncate max-w-[200px]">{order.nama}</TableCell>
-                        <TableCell className="text-center">Rp {parseInt(order.harga).toLocaleString("id-ID")}</TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            <button onClick={() => updateQuantity(order.nama, order.qty - 1)} className={`p-1 rounded-full hover:bg-gray-100 ${order.qty === 1 ? "invisible" : "bg-gray-100"}`}>
-                              <Minus size={12} />
+                    {/* PERBAIKAN: Tambahkan pengecekan array */}
+                    {Array.isArray(allOrders) &&
+                      allOrders.map((order, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="capitalize font-medium text-left truncate max-w-[200px]">{order.nama}</TableCell>
+                          {/* PERBAIKAN: Kolom harga yang hilang */}
+                          <TableCell className="text-center">Rp {parseInt(order.harga).toLocaleString("id-ID")}</TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center gap-2">
+                              <button onClick={() => updateQuantity(order.nama, order.qty - 1)} className={`p-1 rounded-full hover:bg-gray-100 ${order.qty === 1 ? "invisible" : "bg-gray-100"}`}>
+                                <Minus size={12} />
+                              </button>
+                              <span>{order.qty}</span>
+                              <button onClick={() => updateQuantity(order.nama, order.qty + 1)} className="p-1 rounded-full bg-gray-100 hover:bg-gray-200">
+                                <Plus size={12} />
+                              </button>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-center font-medium">Rp {(order.harga * order.qty).toLocaleString("id-ID")}</TableCell>
+                          <TableCell className="text-center">
+                            <button onClick={() => hapusItem(order.nama)} className="text-destructive hover:bg-destructive/10 p-1 rounded-full">
+                              <Trash size={15} />
                             </button>
-                            <span>{order.qty}</span>
-                            <button onClick={() => updateQuantity(order.nama, order.qty + 1)} className="p-1 rounded-full bg-gray-100 hover:bg-gray-200">
-                              <Plus size={12} />
-                            </button>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center font-medium">Rp {(order.harga * order.qty).toLocaleString("id-ID")}</TableCell>
-                        <TableCell className="text-center">
-                          <button onClick={() => hapusItem(order.nama)} className="text-destructive hover:bg-destructive/10 p-1 rounded-full">
-                            <Trash size={15} />
-                          </button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                          </TableCell>
+                        </TableRow>
+                      ))}
                   </TableBody>
                 </Table>
               )}
