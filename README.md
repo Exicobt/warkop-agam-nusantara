@@ -2,7 +2,7 @@
 
 ## 🚀 1. Clone Repository
 ```bash
-git clone https://github.com/Exicobt/aplikasi-kasir.git
+git clone https://github.com/Exicobt/warkop-agam-nusantara.git
 cd aplikasi-kasir
 ```
 
