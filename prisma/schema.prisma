@@ -145,6 +145,7 @@ enum kitchen_status {
   preparing
   done
   finish
+  cancelled
 }
 
 enum admin_account_role {

@@ -1,6 +1,4 @@
-import { PrismaClient } from "@prisma/client";
-
-const prisma = new PrismaClient();
+import prisma from "@/lib/prisma";
 
 export async function GET(request) {
   try {
@@ -60,7 +58,5 @@ export async function GET(request) {
   } catch (error) {
     console.error("Error fetching history:", error);
     return Response.json({ error: "Gagal mengambil history" }, { status: 500 });
-  } finally {
-    await prisma.$disconnect();
   }
 }

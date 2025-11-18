@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ArrowLeft, Printer } from "@phosphor-icons/react/dist/ssr";
+import { ArrowLeft, Printer, Trash } from "@phosphor-icons/react/dist/ssr";
 import Link from "next/link";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/app/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,6 +31,32 @@ const HistoryPage = () => {
       toast.error(error.message);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleCancelOrder = async (orderId) => {
+    // 1. Konfirmasi biar gak kepencet
+    if (!confirm("Yakin mau membatalkan pesanan ini?")) return;
+
+    const toastId = toast.loading("Membatalkan pesanan...");
+
+    try {
+      const response = await fetch(`/api/history/${orderId}/cancel`, {
+        method: "PATCH",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.message || "Gagal membatalkan");
+      }
+
+      toast.success("Pesanan berhasil dibatalkan!", { id: toastId });
+
+      // 2. Refresh data biar statusnya berubah di tabel tanpa reload page
+      fetchHistory();
+    } catch (error) {
+      toast.error(error.message, { id: toastId });
     }
   };
 
@@ -260,6 +286,11 @@ const HistoryPage = () => {
                           <button onClick={() => handlePrint(order)} className="text-gray-500 hover:text-gray-800 p-1 hover:bg-gray-200 rounded transition" title="Print Invoice">
                             <Printer size={20} />
                           </button>
+                          {order.status === "waiting" && (
+                            <button onClick={() => handleCancelOrder(order.id)} className="text-red-500 hover:text-red-700 p-1 hover:bg-red-100 rounded transition" title="Batalkan Pesanan">
+                              <Trash size={20} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
