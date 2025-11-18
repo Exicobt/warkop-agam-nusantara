@@ -1,4 +1,6 @@
 const { PrismaClient } = require("@prisma/client");
+const crypto = require("crypto");
+
 const prisma = new PrismaClient();
 
 async function main() {
@@ -51,6 +53,31 @@ async function main() {
         harga: 12000,
         kategori: "snacks",
         gambar: "",
+      },
+    ],
+    skipDuplicates: true,
+  });
+
+  // Menambahkan user untuk ketiga role
+  await prisma.admin_account.createMany({
+    data: [
+      {
+        username: "dapur",
+        password: "dapur123",
+        full_name: "Dapur User",
+        role: "dapur",
+      },
+      {
+        username: "kasir",
+        password: "kasir123",
+        full_name: "Kasir User",
+        role: "kasir",
+      },
+      {
+        username: "admin",
+        password: "admin123",
+        full_name: "Admin User",
+        role: "admin",
       },
     ],
     skipDuplicates: true,

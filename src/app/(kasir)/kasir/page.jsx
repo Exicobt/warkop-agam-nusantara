@@ -28,17 +28,10 @@ const Menu = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
 
-  const nameRef = useRef();
-
   const pajak = 0.11;
   const totalItem = allOrders.reduce((sum, item) => sum + item.qty, 0);
   const totalHarga = allOrders.reduce((sum, item) => sum + item.harga * item.qty, 0);
   const hargaTotal = totalHarga + totalHarga * pajak;
-
-  const handleName = () => {
-    const name = nameRef.current.value;
-    setName(name);
-  };
 
   const updateQuantity = (nama, newQty) => {
     if (newQty < 1) return;
@@ -80,7 +73,7 @@ const Menu = () => {
         body: JSON.stringify({
           orders: allOrders,
           order_type_id: orderType === "Dine In" ? 1 : 2,
-          name: name,
+          name: selectTable ? `Meja ${selectTable}` : "Guest",
           table: selectTable ? selectTable : 0,
           payment_method_id: parseInt(paymentMethod),
         }),
@@ -97,7 +90,6 @@ const Menu = () => {
       setAllOrders([]);
       setInOrder(null);
       setOrderType("Dine In");
-      nameRef.current.value = "";
       setSelectTable("");
       setPaymentMethod(""); // Pastikan reset paymentMethod juga
       fetchTable();

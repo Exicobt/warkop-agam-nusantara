@@ -226,66 +226,69 @@ const HistoryPage = () => {
         ) : (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full text-left border-collapse">
                 <thead className="bg-gray-100 border-b">
                   <tr>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">No. Order</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Pelanggan</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Meja</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tipe Order</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Status</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">No. Order</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">Pelanggan</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">Meja</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">Tipe Order</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">Status</th>
                     <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Total</th>
-                    <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Tanggal</th>
+                    <th className="px-6 py-3 text-sm font-semibold text-gray-700">Tanggal</th>
                     <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Aksi</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredHistory.map((order) => (
-                    <tbody key={order.id}>
-                      <tr className="border-b hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{order.customer_name}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{order.table_number}</td>
-                        <td className="px-6 py-4 text-sm text-gray-700">{order.order_type}</td>
-                        <td className="px-6 py-4 text-sm">{getStatusBadge(order.status)}</td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900 text-right">Rp {order.total_price.toLocaleString("id-ID")}</td>
-                        <td className="px-6 py-4 text-sm text-gray-600">{formatDate(order.created_at)}</td>
-                        <td className="px-6 py-4 text-center">
-                          <div className="flex gap-2 justify-center">
-                            <button onClick={() => toggleRow(order.id)} className="text-blue-600 hover:text-blue-800 font-medium text-sm">
-                              {expandedRows.has(order.id) ? "Tutup" : "Detail"}
-                            </button>
-                            <button onClick={() => handlePrint(order)} className="text-gray-600 hover:text-gray-800 p-1 hover:bg-gray-100 rounded" title="Print">
-                              <Printer size={18} />
-                            </button>
+
+                {/* PERUBAHAN DISINI: Hapus <tbody> pembungkus luar, langsung map aja */}
+                {filteredHistory.map((order) => (
+                  <tbody key={order.id} className="border-b hover:bg-gray-50 transition">
+                    <tr>
+                      <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id}</td>
+                      {/* Tambahin 'whitespace-nowrap' biar nama panjang gak bikin kolom gepeng */}
+                      <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap">{order.customer_name || "-"}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{order.table_number}</td>
+                      <td className="px-6 py-4 text-sm text-gray-700">{order.order_type}</td>
+                      <td className="px-6 py-4 text-sm">{getStatusBadge(order.status)}</td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900 text-right">Rp {order.total_price.toLocaleString("id-ID")}</td>
+                      <td className="px-6 py-4 text-sm text-gray-600">{formatDate(order.created_at)}</td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex gap-2 justify-center items-center">
+                          <button onClick={() => toggleRow(order.id)} className="text-blue-600 hover:text-blue-800 font-medium text-sm underline decoration-dotted">
+                            {expandedRows.has(order.id) ? "Tutup" : "Detail"}
+                          </button>
+                          <button onClick={() => handlePrint(order)} className="text-gray-500 hover:text-gray-800 p-1 hover:bg-gray-200 rounded transition" title="Print Invoice">
+                            <Printer size={20} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+
+                    {/* Baris Detail (Dropdown) */}
+                    {expandedRows.has(order.id) && (
+                      <tr className="bg-gray-50/50">
+                        <td colSpan="8" className="px-6 py-4 shadow-inner">
+                          <div className="bg-white p-4 rounded-lg border border-gray-200 max-w-2xl">
+                            <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">🧾 Rincian Menu</h4>
+                            <div className="space-y-2">
+                              {order.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed pb-2 last:border-0 last:pb-0">
+                                  <div className="flex flex-col">
+                                    <span className="font-medium text-gray-700">{item.menu_name}</span>
+                                    <span className="text-xs text-gray-500">
+                                      {item.qty} x Rp {item.price.toLocaleString("id-ID")}
+                                    </span>
+                                  </div>
+                                  <span className="font-semibold text-gray-900">Rp {item.total.toLocaleString("id-ID")}</span>
+                                </div>
+                              ))}
+                            </div>
                           </div>
                         </td>
                       </tr>
-                      {expandedRows.has(order.id) && (
-                        <tr className="bg-gray-50 border-b">
-                          <td colSpan="8" className="px-6 py-4">
-                            <div className="space-y-2">
-                              <h4 className="font-semibold text-gray-700 mb-3">Detail Pesanan:</h4>
-                              <div className="space-y-2">
-                                {order.items.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between items-center bg-white p-2 rounded border border-gray-200">
-                                    <div>
-                                      <p className="font-medium text-gray-700">{item.menu_name}</p>
-                                      <p className="text-sm text-gray-500">
-                                        Qty: {item.qty} x Rp {item.price.toLocaleString("id-ID")}
-                                      </p>
-                                    </div>
-                                    <p className="font-semibold text-gray-900">Rp {item.total.toLocaleString("id-ID")}</p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  ))}
-                </tbody>
+                    )}
+                  </tbody>
+                ))}
               </table>
             </div>
           </div>
