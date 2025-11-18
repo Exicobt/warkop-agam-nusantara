@@ -19,19 +19,31 @@ model Admin_account {
 }
 
 model Basket {
-  id            Int            @id @default(autoincrement())
-  order_type_id Int?
-  create_at     DateTime       @default(now()) @db.Timestamp(0)
-  customers_id  Int?
-  status        kitchen_status @default(waiting)
-  customers     Customers?     @relation(fields: [customers_id], references: [id])
-  order_type    Order_type?    @relation(fields: [order_type_id], references: [id])
-  orders        Orders[]
+  id                Int             @id @default(autoincrement())
+  order_type_id     Int?
+  create_at         DateTime        @default(now()) @db.Timestamp(0)
+  customers_id      Int?
+  status            kitchen_status  @default(waiting)
+  payment_method_id Int?
+  customers         Customers?      @relation(fields: [customers_id], references: [id])
+  order_type        Order_type?     @relation(fields: [order_type_id], references: [id])
+  payment_method    Payment_method? @relation(fields: [payment_method_id], references: [id])
+  orders            Orders[]
 
   @@index([order_type_id])
   @@index([customers_id])
+  @@index([payment_method_id])
   @@map("basket")
 }
+
+model Payment_method {
+  id     Int      @id @default(autoincrement())
+  name   String
+  basket Basket[]
+
+  @@map("payment_method")
+}
+
 model Kitchen {
   id         Int             @id @default(autoincrement())
   order_id   Int
