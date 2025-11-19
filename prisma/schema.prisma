@@ -6,6 +6,7 @@ datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
 model Admin_account {
   id            Int                 @id @default(autoincrement())
   username      String?             @db.VarChar(100)
@@ -93,11 +94,13 @@ model Customers {
 }
 
 model Table {
-  id           Int            @id @default(autoincrement())
-  table_number String            @unique
-  status       table_status?  @default(available)
-  location     table_location
-  customers    Customers[]
+  id              Int            @id @default(autoincrement())
+  table_number    String         @unique
+  status          table_status?  @default(available)
+  qr_token        String?        @db.VarChar(100)
+  qr_generated_at DateTime?      @db.Timestamp(0)
+  customers       Customers[]
+  table_sessions  TableSessions[]
 
   @@map("table")
 }
@@ -128,6 +131,7 @@ model Menu {
   orders        Orders[]
   Website_order Website_order[]
   menu_stats    Menu_stats[]
+  comboItems    ComboItem[]
 
   @@map("menu")
 }
@@ -138,6 +142,41 @@ model Menu_stats {
   menu            Menu?         @relation(fields: [menu_id], references: [id])
 
   @@map("menu_stats")
+}
+
+model Combo {
+  id          Int         @id @default(autoincrement())
+  name        String
+  price       Int
+  items       ComboItem[]
+}
+
+model ComboItem {
+  id        Int     @id @default(autoincrement())
+  combo_id  Int
+  menu_id   Int
+
+  combo     Combo   @relation(fields: [combo_id], references: [id])
+  menu      Menu    @relation(fields: [menu_id], references: [id])
+}
+
+model TableSessions {
+  id           String          @id @default(uuid())
+  table_number String          @db.VarChar(10)
+  token        String          @unique @db.VarChar(100)
+  status       session_status? @default(active)
+  created_at   DateTime        @default(now()) @db.Timestamp(0)
+  expired_at   DateTime?       @db.Timestamp(0)
+  order_id     Int?
+  
+  // Relations
+  table Table? @relation(fields: [table_number], references: [table_number], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([table_number])
+  @@index([token])
+  @@index([status])
+  @@index([expired_at])
+  @@map("table_sessions")
 }
 
 enum kitchen_status {
@@ -162,11 +201,13 @@ enum menu_kategori {
 
 enum table_status {
   available
-  occupied
   not_available
 }
 
-enum table_location {
-  lantai_1 @map("lantai 1")
-  lantai_2 @map("lantai 2")
+// NEW ENUM: Session Status for QR Code
+enum session_status {
+  active
+  used
+  expired
+  cancelled
 }

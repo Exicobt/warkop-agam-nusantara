@@ -1,0 +1,89 @@
+import { NextResponse } from 'next/server';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient()
+
+export async function POST(request) {
+  try {
+    const { name, price, items } = await request.json();
+
+    // Validasi
+    if (!name || !price || !items || items.length < 2) {
+      return NextResponse.json(
+        { error: 'Data tidak lengkap' },
+        { status: 400 }
+      );
+    }
+
+    // Buat kombo baru
+    const newCombo = await prisma.combo.create({
+      data: {
+        name,
+        price,
+        items: {
+          create: items.map(menu_id => ({
+            menu_id: parseInt(menu_id)
+          }))
+        }
+      },
+      include: {
+        items: {
+          include: {
+            menu: true
+          }
+        }
+      }
+    });
+
+    return NextResponse.json(newCombo, { status: 201 });
+  } catch (error) {
+    console.error('Error creating combo:', error);
+    return NextResponse.json(
+      { error: 'Gagal membuat kombo menu' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET() {
+  try {
+    const combos = await prisma.combo.findMany({
+      include: {
+        items: {
+          include: {
+            menu: true
+          }
+        }
+      },
+      orderBy: {
+        id: 'desc'
+      }
+    });
+
+    return NextResponse.json(combos);
+  } catch (error) {
+    console.error('Error fetching combos:', error);
+    return NextResponse.json(
+      { error: 'Gagal mengambil data kombo menu' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE() {
+  try {
+    // Hapus semua combo items terlebih dahulu
+    await prisma.comboItem.deleteMany();
+    
+    // Hapus semua combos
+    await prisma.combo.deleteMany();
+
+    return NextResponse.json({ message: 'Semua kombo menu berhasil dihapus' });
+  } catch (error) {
+    console.error('Error deleting all combos:', error);
+    return NextResponse.json(
+      { error: 'Gagal menghapus semua kombo menu' },
+      { status: 500 }
+    );
+  }
+}

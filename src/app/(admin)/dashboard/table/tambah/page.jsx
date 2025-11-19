@@ -1,13 +1,11 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Sidebar from "../../components/Sidebar";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
 const Tambah = () => {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("tables");
   const [formData, setFormData] = useState({});
   const [updating, setUpdating] = useState(false);
   const [tables, setTables] = useState([]);
@@ -24,7 +22,6 @@ const Tambah = () => {
     setFormData({
       table_number: "",
       status: "available",
-      location: "lantai 1",
     });
 
     fetchData();
@@ -39,10 +36,6 @@ const Tambah = () => {
 
     if (!formData.status) {
       newErrors.status = "Status wajib dipilih";
-    }
-
-    if (!formData.location) {
-      newErrors.location = "Lokasi wajib diisi";
     }
 
     setErrors(newErrors);
@@ -76,17 +69,6 @@ const Tambah = () => {
       return;
     }
 
-    if (tables.find((t) => t.table_number === (`${formData.location === "lantai 1" ? "A" : "B"}${
-          formData.table_number
-        }`))) {
-      toast.error(
-        `Meja dengan nomor ${formData.location === "lantai 1" ? "A" : "B"}${
-          formData.table_number
-        } sudah ada`
-      );
-      return
-    }
-
     setUpdating(true);
 
     try {
@@ -96,11 +78,8 @@ const Tambah = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          table_number: `${formData.location === "lantai 1" ? "A" : "B"}${
-            formData.table_number
-          }`,
+          table_number: formData.table_number,
           status: formData.status,
-          location: String(formData.location).replace(" ", "_"),
           action: "create",
         }),
       });
@@ -119,8 +98,7 @@ const Tambah = () => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       <div className="flex pt-16">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex-1 p-6 pl-[calc(4px*70)]">
+        <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between">
@@ -149,22 +127,6 @@ const Tambah = () => {
                       >
                         Lokasi meja
                       </label>
-                      <select
-                        name="location"
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          errors.location ? "border-red-500" : "border-gray-200"
-                        }`}
-                      >
-                        <option value="lantai 1">Lantai 1</option>
-                        <option value="lantai 2">Lantai 2</option>
-                      </select>
-
-                      {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.location}
-                        </p>
-                      )}
                     </div>
                     <div>
                       <label
@@ -174,15 +136,6 @@ const Tambah = () => {
                         Nomor meja
                       </label>
                       <div className="relative">
-                        <span
-                          className={`absolute left-0 px-4 py-2 rounded-l-lg h-full ${
-                            errors.table_number
-                              ? "border-red-500"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          {formData.location === "lantai 1" ? "A" : "B"}
-                        </span>
                         <input
                           name="table_number"
                           type="number"
@@ -211,7 +164,6 @@ const Tambah = () => {
                         }`}
                       >
                         <option value="available">Tersedia</option>
-                        <option value="occupied">Ditempati</option>
                         <option value="not_available">Tidak Tersedia</option>
                       </select>
 
@@ -240,7 +192,7 @@ const Tambah = () => {
                     {updating && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                     )}
-                    {updating ? "Menyimpan..." : "Update Meja"}
+                    {updating ? "Menyimpan..." : "Tambah Meja"}
                   </button>
                 </div>
               </form>
