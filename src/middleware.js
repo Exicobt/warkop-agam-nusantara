@@ -7,7 +7,7 @@ export async function middleware(request) {
 
   const { pathname } = request.nextUrl
 
-  const protectedRoutes = ['/dashboard', '/kasir', '/dapur']
+  const protectedRoutes = ['/dashboard', '/dapur']
 
   if (protectedRoutes.some(route => pathname.startsWith(route))) {
     if (!token) {
@@ -19,10 +19,6 @@ export async function middleware(request) {
       const userRole = decoded.role
 
       if (pathname.startsWith('/dashboard') && userRole !== 'admin') {
-        return NextResponse.redirect(new URL('/unauthorized', request.url))
-      }
-
-      if (pathname.startsWith('/kasir') && userRole !== 'kasir') {
         return NextResponse.redirect(new URL('/unauthorized', request.url))
       }
 

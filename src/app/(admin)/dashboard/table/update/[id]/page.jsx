@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import Sidebar from "../../../components/Sidebar";
 import { useParams, useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -49,10 +48,6 @@ const update = () => {
       newErrors.status = "Status wajib dipilih";
     }
 
-    if (!formData.location) {
-      newErrors.location = "Lokasi wajib diisi";
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,18 +81,13 @@ const update = () => {
 
     const duplicateTable = tables.find(
       (t) =>
-        t.table_number ===
-        `${formData.location === "lantai 1" ? "A" : "B"}${
-          formData.table_number
-        }`
+        t.table_number === formData.table_number
     );
 
     if (duplicateTable) {
       if (duplicateTable.id !== table.id) {
         toast.error(
-          `Meja dengan nomor ${formData.location === "lantai 1" ? "A" : "B"}${
-            formData.table_number
-          } sudah ada`
+          `Meja dengan nomor ${formData.table_number} sudah ada`
         );
         return;
       }
@@ -114,10 +104,8 @@ const update = () => {
         body: JSON.stringify({
           table_id: table.id,
           ...formData,
-          location: String(formData.location).replace(" ", "_"),
-          table_number: `${formData.location === "lantai 1" ? "A" : "B"}${
-            formData.table_number
-          }`,
+          table_number: String(formData.table_number),
+          status: formData.status,
           action: "update",
         }),
       });
@@ -137,8 +125,7 @@ const update = () => {
     return (
       <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
         <div className="flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="flex-1 p-6 pl-[calc(4px*70)] h-screen flex items-center justify-center">
+          <div className="flex-1 p-6 h-screen flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-highlight mx-auto mb-4"></div>
               <p className="text-gray-600">Memuat data meja...</p>
@@ -152,8 +139,7 @@ const update = () => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       <div className="flex pt-16">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex-1 p-6 pl-[calc(4px*70)]">
+        <div className="flex-1 p-6 ">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between">
@@ -177,46 +163,12 @@ const update = () => {
                   <div className="space-y-6">
                     <div>
                       <label
-                        htmlFor="lokasi"
-                        className="block text-sm font-medium text-gray-700 mb-2"
-                      >
-                        Lokasi meja
-                      </label>
-                      <select
-                        value={formData.location}
-                        name="location"
-                        onChange={handleInputChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                          errors.location ? "border-red-500" : "border-gray-200"
-                        }`}
-                      >
-                        <option value="lantai 1">Lantai 1</option>
-                        <option value="lantai 2">Lantai 2</option>
-                      </select>
-
-                      {errors.location && (
-                        <p className="text-red-500 text-sm mt-1">
-                          {errors.location}
-                        </p>
-                      )}
-                    </div>
-                    <div>
-                      <label
                         htmlFor="table_number"
                         className="block text-sm font-medium text-gray-700 mb-2"
                       >
                         Nomor meja
                       </label>
                       <div className="relative">
-                        <span
-                          className={`absolute left-0 px-4 py-2 rounded-l-lg h-full ${
-                            errors.table_number
-                              ? "border-red-500"
-                              : "border-gray-200"
-                          }`}
-                        >
-                          {formData.location === "lantai 1" ? "A" : "B"}
-                        </span>
                         <input
                           name="table_number"
                           type="number"
@@ -247,7 +199,6 @@ const update = () => {
                         }`}
                       >
                         <option value="available">Tersedia</option>
-                        <option value="occupied">Ditempati</option>
                         <option value="not_available">Tidak Tersedia</option>
                       </select>
 

@@ -18,11 +18,11 @@ async function main() {
 
   await prisma.table.createMany({
     data: [
-      { table_number: "1", status: "available", location: "lantai_1" },
-      { table_number: "2", status: "available", location: "lantai_1" },
-      { table_number: "3", status: "available", location: "lantai_1" },
-      { table_number: "4", status: "available", location: "lantai_2" },
-      { table_number: "5", status: "available", location: "lantai_2" },
+      { table_number: "1", status: "available"},
+      { table_number: "2", status: "available"},
+      { table_number: "3", status: "available"},
+      { table_number: "4", status: "available"},
+      { table_number: "5", status: "available"},
     ],
     skipDuplicates: true,
   });

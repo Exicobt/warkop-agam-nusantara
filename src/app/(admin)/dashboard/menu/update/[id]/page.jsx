@@ -3,14 +3,12 @@
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Sidebar from "../../../components/Sidebar";
 import toast from "react-hot-toast";
 import { UploadCloud } from "lucide-react";
 
 const UpdateMenu = () => {
   const { id } = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("menu");
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [imagePreview, setImagePreview] = useState("");
@@ -167,8 +165,7 @@ const UpdateMenu = () => {
     return (
       <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
         <div className="flex">
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-          <div className="flex-1 p-6 pl-[calc(4px*70)] h-screen flex items-center justify-center">
+          <div className="flex-1 p-6 h-screen flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-highlight mx-auto mb-4"></div>
               <p className="text-gray-600">Memuat data menu...</p>
@@ -182,8 +179,7 @@ const UpdateMenu = () => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       <div className="flex pt-16">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex-1 p-6 pl-[calc(4px*70)]">
+        <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
               <div className="flex items-center justify-between">

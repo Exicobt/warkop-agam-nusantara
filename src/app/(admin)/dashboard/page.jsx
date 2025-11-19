@@ -10,7 +10,6 @@ import {
   Package,
 } from "lucide-react";
 import { useEffect, useState } from "react";
-import Sidebar from "./components/Sidebar";
 import toast from "react-hot-toast";
 
 const Dashboard = () => {
@@ -84,8 +83,7 @@ const Dashboard = () => {
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
       <div className="flex pt-16">
-        <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-        <div className="flex-1 p-6 pl-[calc(4px*70)]">
+        <div className="flex-1 p-6">
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               <div className="bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-2xl p-6 shadow-xl">

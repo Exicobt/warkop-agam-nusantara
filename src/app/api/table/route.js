@@ -9,7 +9,7 @@ export async function GET() {
 }
 
 export async function POST(req) {
-    const { table_id, table_number, status, location, action } = await req.json()
+    const { table_id, table_number, status, action } = await req.json()
 
     if(action === 'update') {
         const update = await prisma.table.update({
@@ -19,7 +19,6 @@ export async function POST(req) {
             data: {
                 table_number: table_number,
                 status: status,
-                location: location
             }
         })
 
@@ -31,7 +30,6 @@ export async function POST(req) {
             data: {
                 table_number: table_number,
                 status: status,
-                location: location
             }
         })
 
