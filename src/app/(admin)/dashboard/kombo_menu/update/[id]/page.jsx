@@ -1,22 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { ArrowLeft, Save, Package, X, Search, Plus, UploadCloud } from "lucide-react";
+import { useRouter, useParams } from "next/navigation";
+import { ArrowLeft, Save, Package, X, Search, Plus } from "lucide-react";
 import toast from "react-hot-toast";
 
-const TambahKomboMenu = () => {
+const UpdateKomboMenu = () => {
+  const { id } = useParams();
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [allMenus, setAllMenus] = useState([]);
   const [filteredMenus, setFilteredMenus] = useState([]);
   const [searchMenu, setSearchMenu] = useState("");
-  const router = useRouter();
-
   const [formData, setFormData] = useState({
     name: "",
     price: "",
-    items: [] // Array of menu IDs
-  });
+    items: []
+    });
 
   // Fetch semua menu untuk dipilih
   const fetchAllMenus = async () => {
@@ -29,6 +29,19 @@ const TambahKomboMenu = () => {
       console.error(err);
       toast.error("Gagal memuat data menu");
     }
+  };
+
+  const fetchKombo = async () => {
+    const res = await fetch(`/api/combo`);
+    const data = await res.json();
+    const comboItem = data.find((item) => item.id == parseInt(id))
+    console.log(comboItem)
+    setFormData({
+        name: comboItem.name,
+        price: parseInt(comboItem.price),
+        items: comboItem.items.map((item) => item.menu_id)
+    })
+    setIsLoading(false);
   };
 
   // Filter menu berdasarkan pencarian
@@ -86,58 +99,33 @@ const TambahKomboMenu = () => {
   };
 
   // Handle form submit
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    // Validasi
-    if (!formData.name.trim()) {
-      toast.error("Nama kombo harus diisi");
-      setIsLoading(false);
+  const handleUpdate = async (e) => {
+    e.preventDefault()
+    if (!formData.name || !formData.price || formData.items.length === 0) {
+      toast.error("Lengkapi semua field");
       return;
     }
 
-    if (formData.items.length < 2) {
-      toast.error("Pilih minimal 2 menu untuk kombo");
-      setIsLoading(false);
-      return;
-    }
-
-    if (!formData.price || parseInt(formData.price) <= 0) {
-      toast.error("Harga kombo harus diisi dengan benar");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/combo", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+    const res = await fetch(`/api/combo`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
-          price: parseInt(formData.price),
-          items: formData.items
+            id: parseInt(id),
+            name: formData.name,
+            price: Number(formData.price),
+            items: formData.items,
         }),
-      });
+    });
 
-      if (response.ok) {
-        toast.success("Kombo menu berhasil ditambahkan");
-        router.push("/dashboard/kombo_menu");
-      } else {
-        throw new Error("Gagal menambahkan kombo menu");
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Gagal menambahkan kombo menu");
-    } finally {
-      setIsLoading(false);
-    }
+    if (res.ok) {
+      toast.success("Berhasil memperbarui kombo menu");
+      router.push("/dashboard/kombo_menu");
+    } else toast.error("Gagal mengupdate kombo menu");
   };
 
   useEffect(() => {
     fetchAllMenus();
+    fetchKombo()
   }, []);
 
   return (
@@ -156,15 +144,15 @@ const TambahKomboMenu = () => {
               </button>
               <div>
                 <h1 className="text-2xl font-bold text-gray-800">
-                  Tambah Kombo Menu
+                  Update Kombo Menu
                 </h1>
                 <p className="text-gray-600">
-                  Buat paket menu kombinasi dengan harga spesial
+                  Edit paket menu kombinasi dengan harga spesial
                 </p>
               </div>
             </div>
 
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handleUpdate}>
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Form Input */}
                 <div className="lg:col-span-2 space-y-6">
@@ -207,7 +195,7 @@ const TambahKomboMenu = () => {
                             min="1"
                           />
                         </div>
-                      </div>                      
+                      </div>
                     </div>
                   </div>
 
@@ -364,4 +352,4 @@ const TambahKomboMenu = () => {
   );
 };
 
-export default TambahKomboMenu;
+export default UpdateKomboMenu;

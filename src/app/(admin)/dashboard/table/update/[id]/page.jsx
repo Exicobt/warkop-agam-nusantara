@@ -7,7 +7,6 @@ import toast from "react-hot-toast";
 const update = () => {
   const { id } = useParams();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("tables");
   const [loading, setLoading] = useState(true);
   const [table, setTable] = useState({});
   const [tables, setTables] = useState([]);

@@ -76,7 +76,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   ];
 
   return (
-    <div className="w-64 bg-white shadow-xl h-screen fixed left-0 top-14 flex flex-col">
+    <div className="w-64 bg-white shadow-xl h-[calc(100vh-3.5rem)] fixed left-0 top-14 flex flex-col">
       <div className="flex-1 overflow-y-auto">
         <div className="p-6">
           <nav className="space-y-2">

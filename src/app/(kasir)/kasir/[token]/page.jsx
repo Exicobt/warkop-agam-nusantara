@@ -51,7 +51,6 @@ const Menu = () => {
   const [menu, setMenu] = useState([]);
   const [combos, setCombos] = useState([]);
   const [tables, setTables] = useState([]);
-  const [selectTable, setSelectTable] = useState("");
   const [name, setName] = useState("");
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
