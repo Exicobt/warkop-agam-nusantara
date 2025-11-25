@@ -8,54 +8,57 @@ import {
   ShoppingBag,
   Users,
   Package,
+  LogOut,
+  TrendingUp,
+  Wallet,
+  Utensils,
+  History, // <--- Nambah Ikon History
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useState, useMemo } from "react";
 import toast from "react-hot-toast";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts";
 
 const Dashboard = () => {
   const [menus, setMenus] = useState([]);
   const [tables, setTables] = useState([]);
   const [orders, setOrders] = useState([]);
-  const [activeTab, setActiveTab] = useState("dashboard");
   const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     fetchMenu();
     fetchOrder();
-    fetchTable();                                                                                       
+    fetchTable();
   }, []);
 
   const fetchMenu = async () => {
-    await fetch("/api/menu")
-      .then(async (res) => {
-        const data = await res.json();
-        setMenus(data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const res = await fetch("/api/menu");
+      const data = await res.json();
+      setMenus(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchOrder = async () => {
-    await fetch("/api/orders")
-      .then(async (res) => {
-        const data = await res.json();
-        setOrders(data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const res = await fetch("/api/orders");
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const fetchTable = async () => {
-    await fetch("/api/table")
-      .then(async (res) => {
-        const data = await res.json();
-        setTables(data);
-      })
-      .catch((err) => {
-        console.error(err);
-      });
+    try {
+      const res = await fetch("/api/table");
+      const data = await res.json();
+      setTables(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const handleButton = async (e) => {
@@ -80,103 +83,237 @@ const Dashboard = () => {
     }
   };
 
+  const handleLogout = async () => {
+    const toastId = toast.loading("Sedang logout...");
+    try {
+      await fetch("/api/logout", { method: "POST" });
+      toast.success("Berhasil logout", { id: toastId });
+      window.location.href = "/";
+    } catch (error) {
+      toast.error("Gagal logout", { id: toastId });
+    }
+  };
+
+  // --- LOGIC PENGOLAHAN DATA ---
+  const revenueData = useMemo(() => {
+    if (!orders.length) return [];
+    const days = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+    const stats = days.map((d) => ({ name: d, total: 0 }));
+
+    orders.forEach((basket) => {
+      const dateString = basket.create_at || new Date();
+      const date = new Date(dateString);
+      if (!isNaN(date)) {
+        const basketTotal = basket.orders?.reduce((sum, item) => sum + (item.total || 0), 0) || 0;
+        const dayIndex = date.getDay();
+        stats[dayIndex].total += basketTotal;
+      }
+    });
+
+    const sunday = stats.shift();
+    stats.push(sunday);
+    return stats;
+  }, [orders]);
+
+  const popularMenuData = useMemo(() => {
+    if (!orders.length) return [];
+    const counts = {};
+    orders.forEach((basket) => {
+      if (basket.orders && Array.isArray(basket.orders)) {
+        basket.orders.forEach((item) => {
+          const menuName = item.menu?.nama || "Menu Dihapus";
+          const qty = item.qty || 0;
+          counts[menuName] = (counts[menuName] || 0) + qty;
+        });
+      }
+    });
+    return Object.entries(counts)
+      .map(([name, count]) => ({ name, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 5);
+  }, [orders]);
+
   return (
     <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
-      <div className="flex pt-16">
-        <div className="flex-1 p-6">
-          <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              <div className="bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <Package2 className="w-8 h-8 opacity-80" />
-                  <Package className="w-5 h-5 opacity-60" />
-                </div>
-                <div className="text-3xl font-bold mb-2">{menus.length}</div>
-                <div className="text-green-100 font-medium">Jumlah Menu</div>
-              </div>
+      <div className="flex pt-8 px-6 pb-6 flex-col max-w-7xl mx-auto">
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row justify-between items-center bg-white p-5 rounded-2xl shadow-sm mb-8 border border-gray-100 gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-2">👋 Halo, Admin!</h1>
+            <p className="text-gray-500 text-sm mt-1">Pantau terus restoranmu, jangan sampai ada meja kosong kelamaan ya!</p>
+          </div>
 
-              <div className="bg-gradient-to-br from-blue-400 to-cyan-500 text-white rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <ShoppingBag className="w-8 h-8 opacity-80" />
-                  <Calendar className="w-5 h-5 opacity-60" />
-                </div>
-                <div className="text-3xl font-bold mb-2">{orders.length}</div>
-                <div className="text-blue-100 font-medium">
-                  Pesanan Hari Ini
-                </div>
+          <div className="flex gap-3">
+            {/* --- TOMBOL HISTORY (BARU) --- */}
+            <Link href="/dashboard/history" className="flex items-center gap-2 px-5 py-2.5 bg-blue-50 text-blue-600 rounded-xl hover:bg-blue-500 hover:text-white transition-all duration-300 font-medium group border border-blue-100">
+              <History className="w-5 h-5 group-hover:rotate-12 transition-transform" />
+              History
+            </Link>
+            {/* ----------------------------- */}
+
+            <button onClick={handleLogout} className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300 font-medium group border border-red-100">
+              <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+              Logout
+            </button>
+          </div>
+        </div>
+
+        <div className="space-y-6">
+          {/* STATS CARDS */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-shadow duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+                <Utensils size={100} />
               </div>
-              <div className="bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-xl">
-                <div className="flex items-center justify-between mb-4">
-                  <Users className="w-8 h-8 opacity-80" />
-                  <Clock className="w-5 h-5 opacity-60" />
-                </div>
-                <div className="text-3xl font-bold mb-2">
-                  {tables.filter((t) => t.status === "occupied").length}/
-                  {tables.length}
-                </div>
-                <div className="text-orange-100 font-medium">Meja Terisi</div>
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <Package2 className="w-8 h-8 opacity-80" />
+                <span className="bg-white/20 px-2 py-1 rounded text-xs font-medium">Database</span>
+              </div>
+              <div className="text-3xl font-bold mb-1 relative z-10">{menus.length}</div>
+              <div className="text-green-100 font-medium relative z-10">Total Menu</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-400 to-cyan-500 text-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-shadow duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+                <TrendingUp size={100} />
+              </div>
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <ShoppingBag className="w-8 h-8 opacity-80" />
+                <span className="bg-white/20 px-2 py-1 rounded text-xs font-medium">Total Basket</span>
+              </div>
+              <div className="text-3xl font-bold mb-1 relative z-10">{orders.length}</div>
+              <div className="text-blue-100 font-medium relative z-10">Transaksi Masuk</div>
+            </div>
+
+            <div className="bg-gradient-to-br from-orange-400 to-red-500 text-white rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-shadow duration-300 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity transform group-hover:scale-110 duration-500">
+                <Wallet size={100} />
+              </div>
+              <div className="flex items-center justify-between mb-4 relative z-10">
+                <Users className="w-8 h-8 opacity-80" />
+                <Clock className="w-5 h-5 opacity-60" />
+              </div>
+              <div className="text-3xl font-bold mb-1 relative z-10">
+                {tables.filter((t) => t.status === "occupied").length}/{tables.length}
+              </div>
+              <div className="text-orange-100 font-medium relative z-10">Meja Terisi</div>
+            </div>
+          </div>
+
+          {/* CHARTS */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <TrendingUp className="text-blue-500" size={20} />
+                Trend Pendapatan (Per Hari)
+              </h3>
+              <div className="h-64 w-full">
+                {revenueData.length > 0 && revenueData.some((d) => d.total > 0) ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={revenueData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorTotal" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
+                          <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <XAxis dataKey="name" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `Rp${(value / 1000).toFixed(0)}k`} />
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                      <Tooltip contentStyle={{ backgroundColor: "#fff", borderRadius: "8px", border: "none", boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }} formatter={(value) => `Rp ${value.toLocaleString("id-ID")}`} />
+                      <Area type="monotone" dataKey="total" stroke="#3b82f6" strokeWidth={3} fillOpacity={1} fill="url(#colorTotal)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center text-gray-400 text-sm italic">Belum ada data transaksi yang cukup</div>
+                )}
               </div>
             </div>
 
-            <div>
-              <div className="bg-white rounded-2xl shadow-xl p-6">
-                <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                  <MapPin className="w-6 h-6 text-blue-500" />
-                  Pelanggan
-                </h3>
-                {orders.length < 1 ? (
-                  <div className="h-full w-full py-24 flex justify-center items-center">
-                    Tidak Ada Pelanggan
-                  </div>
+            <div className="bg-white p-6 rounded-2xl shadow-md border border-gray-100">
+              <h3 className="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+                <Utensils className="text-green-500" size={20} />
+                Top 5 Menu Terlaris
+              </h3>
+              <div className="h-64 w-full">
+                {popularMenuData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={popularMenuData} layout="vertical" margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                      <XAxis type="number" hide />
+                      <YAxis dataKey="name" type="category" width={100} tick={{ fontSize: 12 }} interval={0} />
+                      <Tooltip cursor={{ fill: "transparent" }} contentStyle={{ borderRadius: "8px" }} />
+                      <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 ) : (
-                  <div className="space-y-3">
-                    {tables
-                      .filter((t) => t.status === "occupied")
-                      .map((table) => (
-                        <div className="bg-blue-100/30 border-l-4 border-blue-400 rounded-xl p-5 shadow-sm flex items-center gap-5 gird grid-cols-2">
-                          <div>
-                            <Users size={26} className="text-blue-400" />
-                          </div>
-                          <div className="space-y-2 w-full">
-                            <div className="flex gap-5 items-center">
-                              <div className="font-semibold text-base">
-                                Meja {table.table_number}
-                              </div>
-                              <div className="text-sm capitalize bg-blue-200 px-3 p-1 text-blue-500 rounded-full">
-                                {table.status}
-                              </div>
-                            </div>
-                            <div className="flex gap-3">
-                              <div className="text-sm text-gray-600 capitalize">
-                                {String(table.location).replace("_", " ")}
-                              </div>
-                              <div className="text-sm text-gray-600 capitalize">
-                                {(() => {
-                                  const order = orders.find(
-                                    (order) =>
-                                      order.customers.table.id === table.id
-                                  );
-                                  return order
-                                    ? order.customers.name
-                                    : "Tidak diketahui";
-                                })()}
-                              </div>
-                            </div>
-                          </div>
-                          <div className="h-full justify-self-end">
-                            <button
-                              onClick={() => handleButton(table)}
-                              disabled={updating}
-                              className="px-4 py-1 bg-blue-400 rounded-full text-white text-base cursor-pointer disabled:opacity-50"
-                            >
-                              {updating ? "..." : "Selesai"}
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
+                  <div className="h-full w-full flex items-center justify-center text-gray-400 text-sm italic">Belum ada pesanan masuk</div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* LIVE MONITOR */}
+          <div>
+            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                  <MapPin className="w-6 h-6 text-blue-500" />
+                  Monitor Meja & Pelanggan
+                </h3>
+                <span className="text-xs font-medium bg-blue-100 text-blue-600 px-3 py-1 rounded-full animate-pulse">Live Update</span>
+              </div>
+
+              {tables.filter((t) => t.status === "occupied").length < 1 ? (
+                <div className="h-40 w-full flex flex-col justify-center items-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
+                  <Users className="w-10 h-10 mb-2 opacity-20" />
+                  <p>Belum ada pelanggan yang duduk manis.</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tables
+                    .filter((t) => t.status === "occupied")
+                    .map((table) => {
+                      const activeBasket = orders.find((basket) => basket.customers?.table?.id === table.id && basket.status !== "finish" && basket.status !== "cancelled");
+
+                      const customerName = activeBasket ? activeBasket.customers?.name : "Tanpa Nama";
+
+                      return (
+                        <div key={table.id} className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-blue-100 p-2 rounded-lg">
+                                <Users size={20} className="text-blue-500" />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-gray-800">Meja {table.table_number}</h4>
+                                <span className="text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full capitalize">{table.status}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1 pl-1">
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <MapPin size={14} />
+                              <span className="capitalize">{String(table.location).replace("_", " ")}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
+                              <Users size={14} />
+                              <span>{customerName}</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={() => handleButton(table)}
+                            disabled={updating}
+                            className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-blue-200 shadow-lg mt-2"
+                          >
+                            {updating ? "Memproses..." : "Selesaikan Sesi"}
+                          </button>
+                        </div>
+                      );
+                    })}
+                </div>
+              )}
             </div>
           </div>
         </div>
