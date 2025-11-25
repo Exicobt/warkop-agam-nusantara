@@ -87,3 +87,50 @@ export async function DELETE() {
     );
   }
 }
+
+export async function PUT(request) {
+  try {
+    const { id, name, price, items } = await request.json();
+
+    if (!id || !name || !price || !items || items.length < 2) {
+      return NextResponse.json(
+        { error: "Data tidak lengkap untuk update kombo" },
+        { status: 400 }
+      );
+    }
+
+    // Hapus semua item lama (biar update bersih)
+    await prisma.comboItem.deleteMany({
+      where: { combo_id: Number(id) },
+    });
+
+    // Update data combo + isi ulang items
+    const updatedCombo = await prisma.combo.update({
+      where: { id: Number(id) },
+      data: {
+        name,
+        price,
+        items: {
+          create: items.map((menu_id) => ({
+            menu_id: Number(menu_id),
+          })),
+        },
+      },
+      include: {
+        items: {
+          include: {
+            menu: true,
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(updatedCombo, { status: 200 });
+  } catch (error) {
+    console.error("Error updating combo:", error);
+    return NextResponse.json(
+      { error: "Gagal mengupdate kombo menu" },
+      { status: 500 }
+    );
+  }
+}
