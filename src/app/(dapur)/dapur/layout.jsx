@@ -1,13 +1,11 @@
 export const metadata = {
-    title: 'Dapur'
-}
+  title: "Dapur",
+};
 
 export default function DapurLayout({ children }) {
-    return(
-        <html lang="en">
-            <body>
-                { children }
-            </body>
-        </html>
-    )
+  return (
+    <html lang="en">
+      <body>{children}</body>
+    </html>
+  );
 }
