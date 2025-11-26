@@ -62,22 +62,22 @@ async function main() {
   await prisma.admin_account.createMany({
     data: [
       {
-        username: "dapur",
-        password: "dapur123",
+        email: "dapur@gmail.com",
         full_name: "Dapur User",
         role: "dapur",
+        uid: "PQPbM3XRG2W59FiYug0pXE4zQS52"
       },
       {
-        username: "kasir",
-        password: "kasir123",
+        email: "kasir@gmail.com",
         full_name: "Kasir User",
         role: "kasir",
+        uid : "Dp2tj6jHFlSE4Micm50w5GPHB3p2"
       },
       {
-        username: "admin",
-        password: "admin123",
+        email: "admin@gmail.com",
         full_name: "Admin User",
         role: "admin",
+        uid: "gwpHZFPDZ3X6D5OfAz4D4DTD6Cz1"
       },
     ],
     skipDuplicates: true,

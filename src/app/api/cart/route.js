@@ -6,7 +6,7 @@ export async function POST(request) {
     try {
         const { order_type_id, orders, name, table, token } = await request.json(); 
 
-        // ✅ VALIDASI TOKEN JIKA ADA (untuk QR code order)
+        // 1. VALIDASI TOKEN JIKA ADA (untuk QR code order)
         if (token) {
             const validSession = await prisma.tableSessions.findFirst({
                 where: {
@@ -14,7 +14,7 @@ export async function POST(request) {
                     status: 'active',
                     expired_at: { gt: new Date() },
                     table: {
-                        status: 'available' // Pastikan meja masih available
+                        status: 'available' // Pastikan meja masih available saat scan
                     }
                 }
             });
@@ -22,17 +22,7 @@ export async function POST(request) {
             if (!validSession) {
                 return new Response(
                     JSON.stringify({ 
-                        error: "QR code sudah tidak valid. Silakan scan ulang QR code." 
-                    }), 
-                    { status: 400 }
-                );
-            }
-
-            // ✅ Validasi bahwa table number match dengan token
-            if (table && table !== validSession.table_number) {
-                return new Response(
-                    JSON.stringify({ 
-                        error: "Meja tidak sesuai dengan QR code." 
+                        error: "QR code sudah tidak valid atau meja sudah terisi." 
                     }), 
                     { status: 400 }
                 );
@@ -40,9 +30,10 @@ export async function POST(request) {
         }
 
         let customers;
+        let tableIdForUpdate = null; // Untuk menyimpan ID meja jika ada
 
         if (order_type_id === 1) {
-            // ✅ Untuk Dine In, pastikan meja available
+            // 2. Untuk Dine In, pastikan meja available sebelum membuat customer
             const tableCheck = await prisma.table.findFirst({
                 where: { 
                     table_number: table,
@@ -58,12 +49,14 @@ export async function POST(request) {
                     { status: 400 }
                 );
             }
-
+            
+            tableIdForUpdate = tableCheck.id; // Simpan ID meja
+            
             customers = await prisma.customers.create({
                 data: {
                     name: name,
                     table: {
-                        connect: { table_number: table }
+                        connect: { id: tableIdForUpdate }
                     }
                 }
             });
@@ -77,9 +70,12 @@ export async function POST(request) {
             });
         }
 
+        // 3. Buat Basket (Pesanan) dengan status default 'pending'
         const newBasket = await prisma.basket.create({
             data: {
                 order_type: { connect: { id: order_type_id } },
+                customers: { connect: { id: customers.id } },
+                status: 'pending', // Status awal: pending
                 orders: {
                     create: orders.map(order => ({
                         menu_id: order.id,
@@ -87,16 +83,23 @@ export async function POST(request) {
                         total: (order.harga * order.qty)
                     }))
                 },
-                customers: { connect: { id: customers.id } },
             },
             include: {
                 order_type: true,
                 orders: true,
-                customers: true
+                customers: { include: { table: true } }
             }
         });
 
-        // ✅ MARK TOKEN AS USED JIKA ORDER BERHASIL
+        // 4. Update Table Status menjadi 'not_available' (Dine In)
+        if (order_type_id === 1 && tableIdForUpdate) {
+            await prisma.table.update({
+                where: { id: tableIdForUpdate },
+                data: { status: 'not_available' }
+            });
+        }
+        
+        // 5. MARK TOKEN AS USED (Jika menggunakan QR code)
         if (token) {
             await prisma.tableSessions.update({
                 where: { token: token },
@@ -105,17 +108,9 @@ export async function POST(request) {
                     order_id: newBasket.id // Simpan relasi ke order
                 }
             });
-
-            // ✅ UPDATE TABLE STATUS JADI NOT AVAILABLE
-            if (order_type_id === 1 && table) {
-                await prisma.table.update({
-                    where: { table_number: table },
-                    data: { status: 'not_available' }
-                });
-            }
         }
 
-        // Update menu stats (existing code)
+        // 6. Update menu stats (existing code)
         await Promise.all(
             orders.map(async (order) => {
                 await prisma.menu_stats.upsert({
@@ -133,7 +128,7 @@ export async function POST(request) {
             })
         );
 
-        console.log("Berhasil menambah data basket dengan orders:", newBasket);
+        console.log("Berhasil menambah data basket dengan status 'pending':", newBasket.id);
 
         return new Response(JSON.stringify(newBasket), { status: 201 });
 

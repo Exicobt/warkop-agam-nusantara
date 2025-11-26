@@ -259,14 +259,6 @@ const Menu = () => {
     }
   };
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchTable();
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   // Filter data berdasarkan kategori dan search term
   const getFilteredData = () => {
     let filteredData = [];
