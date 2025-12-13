@@ -33,29 +33,6 @@ const AdminHistoryPage = () => {
     }
   };
 
-  const handleCancelOrder = async (orderId) => {
-    if (!confirm("Yakin mau membatalkan pesanan ini? Status akan berubah jadi Cancelled.")) return;
-
-    const toastId = toast.loading("Membatalkan pesanan...");
-
-    try {
-      const response = await fetch(`/api/history/${orderId}/cancel`, {
-        method: "PATCH",
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "Gagal membatalkan");
-      }
-
-      toast.success("Pesanan berhasil dibatalkan!", { id: toastId });
-      fetchHistory();
-    } catch (error) {
-      toast.error(error.message, { id: toastId });
-    }
-  };
-
   const toggleRow = (id) => {
     setExpandedRows((prev) => {
       const newSet = new Set(prev);
@@ -286,11 +263,6 @@ const AdminHistoryPage = () => {
                           <button onClick={() => handlePrint(order)} className="text-gray-500 hover:text-gray-800 p-2 hover:bg-gray-100 rounded-lg transition" title="Print Invoice">
                             <Printer size={18} />
                           </button>
-                          {order.status === "waiting" && (
-                            <button onClick={() => handleCancelOrder(order.id)} className="text-red-500 hover:text-red-700 p-2 hover:bg-red-50 rounded-lg transition" title="Batalkan Pesanan">
-                              <Trash size={18} />
-                            </button>
-                          )}
                         </div>
                       </td>
                     </tr>

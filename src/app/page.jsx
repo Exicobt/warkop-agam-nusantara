@@ -93,7 +93,7 @@ export default function LoginPage() {
             window.location.href = "/dashboard";
             break;
           case "kasir":
-            window.location.href = "/kasir";
+            window.location.href = "/cashier";
             break;
           case "dapur":
             window.location.href = "/dapur";

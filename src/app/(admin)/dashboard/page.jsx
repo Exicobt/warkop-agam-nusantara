@@ -8,7 +8,6 @@ import {
   ShoppingBag,
   Users,
   Package,
-  LogOut,
   TrendingUp,
   Wallet,
   Utensils,
@@ -87,17 +86,6 @@ const Dashboard = () => {
       toast.error("Gagal update data");
     } finally {
       setUpdating(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    const toastId = toast.loading("Sedang logout...");
-    try {
-      await fetch("/api/logout", { method: "POST" });
-      toast.success("Berhasil logout", { id: toastId });
-      window.location.href = "/";
-    } catch (error) {
-      toast.error("Gagal logout", { id: toastId });
     }
   };
 
@@ -255,11 +243,6 @@ const Dashboard = () => {
               History
             </a>
             {/* ----------------------------- */}
-
-            <button onClick={handleLogout} className="flex items-center gap-2 px-5 py-2.5 bg-red-50 text-red-600 rounded-xl hover:bg-red-500 hover:text-white transition-all duration-300 font-medium group border border-red-100">
-              <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
-              Logout
-            </button>
           </div>
         </div>
 
@@ -397,73 +380,6 @@ const Dashboard = () => {
                   <div className="h-full w-full flex items-center justify-center text-gray-400 text-sm italic">Belum ada pesanan lunas masuk dalam rentang ini.</div>
                 )}
               </div>
-            </div>
-          </div>
-
-          {/* LIVE MONITOR */}
-          <div>
-            <div className="bg-white rounded-2xl shadow-xl p-6 border border-gray-100">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                  <MapPin className="w-6 h-6 text-blue-500" />
-                  Monitor Meja & Pelanggan
-                  <span className="ml-4 text-sm font-medium bg-orange-100 text-orange-600 px-3 py-1 rounded-full">
-                    {occupiedTablesCount} Meja Terisi dari {tables.length} Total Meja
-                  </span>
-                </h3>
-                <span className="text-xs font-medium bg-blue-100 text-blue-600 px-3 py-1 rounded-full animate-pulse">Live Update</span>
-              </div>
-
-              {tablesOccupied.length < 1 ? (
-                <div className="h-40 w-full flex flex-col justify-center items-center text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-                  <Users className="w-10 h-10 mb-2 opacity-20" />
-                  <p>Belum ada pelanggan yang duduk manis.</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {tablesOccupied.map((table) => {
-                    // Cari basket yang aktif (belum selesai/batal) dan terkait dengan meja ini
-                    const activeBasket = orders.find((basket) => basket.customers?.table?.id === table.id && basket.status !== "finish" && basket.status !== "cancelled");
-
-                    const customerName = activeBasket ? activeBasket.customers?.name : "Pelanggan Baru";
-
-                    return (
-                      <div key={table.id} className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between gap-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg">
-                              <Users size={20} className="text-blue-500" />
-                            </div>
-                            <div>
-                              <h4 className="font-bold text-gray-800">Meja {table.table_number}</h4>
-                              <span className="text-xs text-blue-500 bg-blue-100 px-2 py-0.5 rounded-full capitalize">{table.status}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="space-y-1 pl-1">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
-                            <MapPin size={14} />
-                            <span className="capitalize">{String(table.location).replace("_", " ")}</span>
-                          </div>
-                          <div className="flex items-center gap-2 text-sm font-medium text-gray-800">
-                            <Users size={14} />
-                            <span>{customerName}</span>
-                          </div>
-                        </div>
-
-                        <button
-                          onClick={() => handleButton(table)}
-                          disabled={updating}
-                          className="w-full py-2 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-blue-200 shadow-lg mt-2"
-                        >
-                          {updating ? "Memproses..." : "Selesaikan Sesi"}
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           </div>
         </div>

@@ -26,11 +26,6 @@ export async function GET(request) {
             },
           },
         },
-        order_type: {
-          select: {
-            name: true,
-          },
-        },
       },
       orderBy: {
         create_at: "desc",
@@ -43,7 +38,6 @@ export async function GET(request) {
       created_at: basket.create_at,
       customer_name: basket.customers?.name || "Guest",
       table_number: basket.customers?.table?.table_number || "-",
-      order_type: basket.order_type?.name || "Unknown",
       status: basket.status,
       items: basket.orders.map((order) => ({
         menu_name: order.menu?.nama || "Unknown Item",

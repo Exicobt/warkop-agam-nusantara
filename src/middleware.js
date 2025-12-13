@@ -23,13 +23,17 @@ export async function middleware(request) {
       return NextResponse.redirect(new URL('/unauthorized', request.url))
     }
 
+    if (pathname.startsWith('/cashier') && userRole !== 'kasir') {
+      return NextResponse.redirect(new URL('/unauthorized', request.url))
+    }
+
     return NextResponse.next()
   }
 
   // kalo user udah login, redirect ke dashboard sesuai role
   if (pathname === '/' && token) {
     return NextResponse.redirect(
-      new URL(token.role === 'admin' ? '/dashboard' : '/dapur', request.url)
+      new URL(token.role === 'admin' ? '/dashboard' : ( token.role === 'kasir' ? '/cashier' : '/dapur' ), request.url)
     )
   }
 

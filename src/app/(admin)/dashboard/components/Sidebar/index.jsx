@@ -6,17 +6,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   const router = useRouter();
   const [openMenus, setOpenMenus] = useState({});
 
-  const handleLogout = async () => {
-    try {
-      await fetch("/api/logout", {
-        method: "POST",
-      });
-      router.push('/');
-    } catch (error) {
-      console.error('Logout failed:', error);
-    }
-  };
-
   const toggleMenuDropdown = (menuId) => {
     setOpenMenus(prev => ({
       ...prev,
@@ -149,17 +138,6 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             })}
           </nav>
         </div>
-      </div>
-
-      {/* Logout Button - Fixed at bottom */}
-      <div className="p-6 border-t border-gray-100 mt-auto">
-        <button 
-          onClick={handleLogout}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg font-medium transition-all duration-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-        >
-          <LogOut className="w-5 h-5" />
-          Logout
-        </button>
       </div>
     </div>
   );

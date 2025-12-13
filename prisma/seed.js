@@ -11,11 +11,6 @@ async function main() {
     skipDuplicates: true,
   });
 
-  await prisma.order_type.createMany({
-    data: [{ name: "Dine In" }, { name: "Take Away" }],
-    skipDuplicates: true,
-  });
-
   await prisma.table.createMany({
     data: [
       { table_number: "1", status: "available"},

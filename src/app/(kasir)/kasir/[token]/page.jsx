@@ -46,7 +46,6 @@ const Menu = () => {
   const [inOrder, setInOrder] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [allOrders, setAllOrders] = useState([]);
-  const [orderType, setOrderType] = useState("Dine In");
   const [isLoading, setIsLoading] = useState(false);
   const [menu, setMenu] = useState([]);
   const [combos, setCombos] = useState([]);
@@ -89,13 +88,12 @@ const Menu = () => {
     validateSession();
   }, [token, router]);
 
-  const pajak = 0.11;
   const totalItem = allOrders.reduce((sum, item) => sum + item.qty, 0);
   const totalHarga = allOrders.reduce(
     (sum, item) => sum + item.harga * item.qty,
     0
   );
-  const hargaTotal = totalHarga + totalHarga * pajak;
+  const hargaTotal = totalHarga;
 
   const updateQuantity = (nama, newQty) => {
     if (newQty < 1) return;
@@ -111,14 +109,6 @@ const Menu = () => {
   const hapusSemuaMenu = () => setAllOrders([]);
 
   const selectOrder = async () => {
-    // Validasi untuk Dine In
-    if (orderType === "Dine In") {
-      if (!session?.table_number) {
-        toast.error("Data meja tidak valid");
-        return;
-      }
-    }
-
     if (allOrders.length === 0) {
       toast.error("Pesanan masih kosong");
       return;
@@ -136,10 +126,10 @@ const Menu = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orders: allOrders,
-          order_type_id: orderType === "Dine In" ? 1 : 2,
           name:
-            orderType === "Dine In" ? `Meja ${session.table_number}` : "Guest",
-          table: orderType === "Dine In" ? session.table_number : 0,
+            `Meja ${session.table_number}`,
+          table: session.table_number ,
+          total: hargaTotal,
           payment_method_id: parseInt(paymentMethod),
           qr_token: token,
           session_id: session?.session_id, // tambahkan session_id jika perlu
@@ -470,22 +460,9 @@ const Menu = () => {
             </div>
 
             <div className="mb-6">
-              {/* type order */}
-              <Select
-                onValueChange={(val) => setOrderType(val)}
-                value={orderType}
-              >
-                <SelectTrigger className="w-full mb-2">
-                  <SelectValue placeholder="Pilih jenis order" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Take Away">Take Away</SelectItem>
-                  <SelectItem value="Dine In">Dine In</SelectItem>
-                </SelectContent>
-              </Select>
 
               {/* INFORMASI MEJA DARI QR */}
-              {orderType === "Dine In" && session && (
+              {session && (
                 <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl shadow-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -501,24 +478,6 @@ const Menu = () => {
                     <div className="text-right">
                       <p className="text-2xl font-bold text-green-700">
                         #{session.table_number}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {orderType === "Take Away" && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200 rounded-xl shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Package size={20} className="text-blue-600" />
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-blue-800">
-                        Take Away
-                      </p>
-                      <p className="text-xs text-blue-600">
-                        Pesanan untuk dibawa pulang
                       </p>
                     </div>
                   </div>
@@ -634,19 +593,15 @@ const Menu = () => {
               <div className="flex justify-between items-end mb-4">
                 <div className="text-sm text-black/60">
                   <p>Total harga:</p>
-                  <p>Pajak: </p>
                   <p className="text-lg font-semibold text-black">
                     Total{" "}
-                    <span className="text-sm font-normal text-black/60">
-                      (pajak {pajak * 100}%)
-                    </span>
+                 
                   </p>
                 </div>
                 <div className="text-sm text-right text-black/70">
                   <p>Rp {totalHarga.toLocaleString("id-ID")}</p>
                   <p>
-                    ({pajak * 100}%) Rp{" "}
-                    {(totalHarga * pajak).toLocaleString("id-ID")}
+                    {(totalHarga).toLocaleString("id-ID")}
                   </p>
                   <p className="text-highlight text-xl font-bold">
                     Rp {hargaTotal.toLocaleString("id-ID")}

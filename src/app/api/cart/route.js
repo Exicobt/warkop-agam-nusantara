@@ -4,7 +4,7 @@ const prisma = new PrismaClient();
 
 export async function POST(request) {
     try {
-        const { order_type_id, orders, name, table, token } = await request.json(); 
+        const { orders, name, table, total, token } = await request.json(); 
 
         // 1. VALIDASI TOKEN JIKA ADA (untuk QR code order)
         if (token) {
@@ -32,72 +32,89 @@ export async function POST(request) {
         let customers;
         let tableIdForUpdate = null; // Untuk menyimpan ID meja jika ada
 
-        if (order_type_id === 1) {
-            // 2. Untuk Dine In, pastikan meja available sebelum membuat customer
-            const tableCheck = await prisma.table.findFirst({
-                where: { 
-                    table_number: table,
-                    status: 'available'
-                }
-            });
-
-            if (!tableCheck) {
-                return new Response(
-                    JSON.stringify({ 
-                        error: "Meja tidak tersedia atau sedang digunakan." 
-                    }), 
-                    { status: 400 }
-                );
+        const tableCheck = await prisma.table.findFirst({
+            where: { 
+                table_number: table,
+                status: 'available'
             }
-            
-            tableIdForUpdate = tableCheck.id; // Simpan ID meja
-            
-            customers = await prisma.customers.create({
-                data: {
-                    name: name,
-                    table: {
-                        connect: { id: tableIdForUpdate }
+        });
+
+        if (!tableCheck) {
+            return new Response(
+                JSON.stringify({ 
+                    error: "Meja tidak tersedia atau sedang digunakan." 
+                }), 
+                { status: 400 }
+            );
+        }
+        
+        tableIdForUpdate = tableCheck.id; // Simpan ID meja
+        
+        customers = await prisma.customers.create({
+            data: {
+                name: name,
+                table: {
+                    connect: { id: tableIdForUpdate }
+                }
+            }
+        });
+
+        // PREPARE ORDERS DATA - TANGANI COMBO
+        const orderItems = [];
+
+        for (const order of orders) {
+            if (order.type === 'combo') {
+                // Untuk combo, ambil items dari database
+                const combo = await prisma.combo.findUnique({
+                    where: { id: order.id },
+                    include: {
+                        items: {
+                            include: {
+                                menu: true
+                            }
+                        }
+                    }
+                });
+
+                if (combo && combo.items) {
+                    // Buat order untuk setiap item dalam combo
+                    for (const comboItem of combo.items) {
+                        orderItems.push({
+                            menu_id: comboItem.menu_id,
+                            qty: order.qty,
+                            total: comboItem.menu.harga * order.qty
+                        });
                     }
                 }
-            });
-
-        } else {
-            // Take Away
-            customers = await prisma.customers.create({
-                data: {
-                    name: name
-                }
-            });
+            } else {
+                // Untuk menu biasa
+                orderItems.push({
+                    menu_id: order.id,
+                    qty: order.qty,
+                    total: order.harga * order.qty
+                });
+            }
         }
 
         // 3. Buat Basket (Pesanan) dengan status default 'pending'
         const newBasket = await prisma.basket.create({
             data: {
-                order_type: { connect: { id: order_type_id } },
                 customers: { connect: { id: customers.id } },
                 status: 'pending', // Status awal: pending
                 orders: {
-                    create: orders.map(order => ({
-                        menu_id: order.id,
-                        qty: order.qty,
-                        total: (order.harga * order.qty)
-                    }))
+                    create: orderItems
                 },
+                total: total
             },
             include: {
-                order_type: true,
-                orders: true,
+                orders: {
+                    include: {
+                        menu: true // Include menu info untuk debugging
+                    }
+                },
                 customers: { include: { table: true } }
             }
         });
-
-        // 4. Update Table Status menjadi 'not_available' (Dine In)
-        if (order_type_id === 1 && tableIdForUpdate) {
-            await prisma.table.update({
-                where: { id: tableIdForUpdate },
-                data: { status: 'not_available' }
-            });
-        }
         
         // 5. MARK TOKEN AS USED (Jika menggunakan QR code)
         if (token) {
@@ -110,20 +127,20 @@ export async function POST(request) {
             });
         }
 
-        // 6. Update menu stats (existing code)
+        // 6. Update menu stats
         await Promise.all(
-            orders.map(async (order) => {
+            orderItems.map(async (order) => {
                 await prisma.menu_stats.upsert({
-                where: { menu_id: order.id },
-                update: {
-                    quantity: {
-                    increment: order.qty
+                    where: { menu_id: order.menu_id },
+                    update: {
+                        quantity: {
+                            increment: order.qty
+                        }
+                    },
+                    create: {
+                        menu_id: order.menu_id,
+                        quantity: order.qty
                     }
-                },
-                create: {
-                    menu_id: order.id,
-                    quantity: order.qty
-                }
                 });
             })
         );
