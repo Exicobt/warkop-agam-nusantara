@@ -7,9 +7,8 @@ const nextConfig = {
             }
         ]
     },
-    experimental: {
-        serverComponentsExternalPackages: ['jsonwebtoken'],
-    },
+    serverExternalPackages: ["@prisma/client", "some-package"]
+
 };
 
 export default nextConfig;
