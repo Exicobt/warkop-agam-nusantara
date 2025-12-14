@@ -9,10 +9,10 @@ datasource db {
 
 model Admin_account {
   id            Int                 @id @default(autoincrement())
-  username      String?             @db.VarChar(100)
-  password      String?             @db.VarChar(100)
+  email         String?             @db.VarChar(100)
   full_name     String?             @db.VarChar(100)
   role          admin_account_role? @default(kasir)
+  uid           String              @db.VarChar(100)                 
   website_order Website_order[]
   orders        Orders[]            @relation("Admin_accountToOrders")
 
@@ -21,17 +21,16 @@ model Admin_account {
 
 model Basket {
   id                Int             @id @default(autoincrement())
-  order_type_id     Int?
   create_at         DateTime        @default(now()) @db.Timestamp(0)
   customers_id      Int?
-  status            kitchen_status  @default(waiting)
+  status            kitchen_status  @default(pending)
+  total             Int?
+  tipe_order        order_tipe      @default(dine_in)
   payment_method_id Int?
   customers         Customers?      @relation(fields: [customers_id], references: [id])
-  order_type        Order_type?     @relation(fields: [order_type_id], references: [id])
   payment_method    Payment_method? @relation(fields: [payment_method_id], references: [id])
   orders            Orders[]
 
-  @@index([order_type_id])
   @@index([customers_id])
   @@index([payment_method_id])
   @@map("basket")
@@ -45,32 +44,12 @@ model Payment_method {
   @@map("payment_method")
 }
 
-model Kitchen {
-  id         Int             @id @default(autoincrement())
-  order_id   Int
-  status     kitchen_status? @default(waiting)
-  updated_at DateTime        @default(now()) @db.Timestamp(0)
-  orders     Orders          @relation(fields: [order_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "kitchen_order_fk")
-
-  @@index([order_id], map: "order_id")
-  @@map("kitchen")
-}
-
-model Order_type {
-  id      Int      @id @default(autoincrement())
-  name    String
-  baskets Basket[]
-
-  @@map("order_type")
-}
-
 model Orders {
   id            Int             @id @default(autoincrement())
   basket_id     Int?
   menu_id       Int?
   qty           Int
   total         Int
-  Kitchen       Kitchen[]
   basket        Basket?         @relation(fields: [basket_id], references: [id])
   menu          Menu?           @relation(fields: [menu_id], references: [id])
   Website_order Website_order[]
@@ -180,11 +159,18 @@ model TableSessions {
 }
 
 enum kitchen_status {
+  pending
   waiting
   preparing
   done
   finish
   cancelled
+}
+
+enum table_status {
+  available
+  occupied
+  not_available
 }
 
 enum admin_account_role {
@@ -199,12 +185,11 @@ enum menu_kategori {
   snacks
 }
 
-enum table_status {
-  available
-  not_available
+enum order_tipe {
+  dine_in
+  take_away
 }
 
-// NEW ENUM: Session Status for QR Code
 enum session_status {
   active
   used

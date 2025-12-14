@@ -4,7 +4,7 @@ import { Menu, Bell, Search, Store, ChevronDown, User, Loader2, X, Receipt, Cloc
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 
-const DapurNavbar = () => {
+const KasirNavbar = () => {
   // --- STATE SEARCH ---  const [isLoading, setIsLoading] = useState(false);
 
 
@@ -34,7 +34,7 @@ const DapurNavbar = () => {
               <span className="font-bold text-gray-800 text-lg leading-tight tracking-tight">
                 Warkop<span className="text-blue-400">AgamNusantara</span>
               </span>
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Dapur Panel</span>
+              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Kasir Panel</span>
             </div>
           </Link>
         </div>
@@ -48,7 +48,7 @@ const DapurNavbar = () => {
               <User size={18} />
             </div>
             <div className="hidden sm:flex flex-col items-start">
-              <span className="text-sm font-semibold text-gray-700 leading-none">Dapur</span>
+              <span className="text-sm font-semibold text-gray-700 leading-none">Kasir</span>
             </div>
             <div className="relative">
               <ChevronDown size={16} className="text-gray-400 hidden sm:block" />
@@ -76,4 +76,4 @@ const DapurNavbar = () => {
   );
 };
 
-export default DapurNavbar;
+export default KasirNavbar;

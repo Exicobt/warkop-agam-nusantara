@@ -4,9 +4,8 @@ const prisma = new PrismaClient();
 
 export async function POST(request) {
     try {
-        const { order_type_id, orders, name, table, token } = await request.json(); 
+        const { orders, name, table, total, tipe_order, token } = await request.json(); 
 
-        // ✅ VALIDASI TOKEN JIKA ADA (untuk QR code order)
         if (token) {
             const validSession = await prisma.tableSessions.findFirst({
                 where: {
@@ -14,7 +13,7 @@ export async function POST(request) {
                     status: 'active',
                     expired_at: { gt: new Date() },
                     table: {
-                        status: 'available' // Pastikan meja masih available
+                        status: 'available' 
                     }
                 }
             });
@@ -22,17 +21,7 @@ export async function POST(request) {
             if (!validSession) {
                 return new Response(
                     JSON.stringify({ 
-                        error: "QR code sudah tidak valid. Silakan scan ulang QR code." 
-                    }), 
-                    { status: 400 }
-                );
-            }
-
-            // ✅ Validasi bahwa table number match dengan token
-            if (table && table !== validSession.table_number) {
-                return new Response(
-                    JSON.stringify({ 
-                        error: "Meja tidak sesuai dengan QR code." 
+                        error: "QR code sudah tidak valid atau meja sudah terisi." 
                     }), 
                     { status: 400 }
                 );
@@ -40,9 +29,9 @@ export async function POST(request) {
         }
 
         let customers;
+        let tableIdForUpdate = null; // Untuk menyimpan ID meja jika ada
 
-        if (order_type_id === 1) {
-            // ✅ Untuk Dine In, pastikan meja available
+        if(tipe_order === 'dine_in') {
             const tableCheck = await prisma.table.findFirst({
                 where: { 
                     table_number: table,
@@ -58,18 +47,18 @@ export async function POST(request) {
                     { status: 400 }
                 );
             }
-
+        
+            tableIdForUpdate = tableCheck.id; // Simpan ID meja
+            
             customers = await prisma.customers.create({
                 data: {
                     name: name,
                     table: {
-                        connect: { table_number: table }
+                        connect: { id: tableIdForUpdate }
                     }
                 }
             });
-
         } else {
-            // Take Away
             customers = await prisma.customers.create({
                 data: {
                     name: name
@@ -77,26 +66,67 @@ export async function POST(request) {
             });
         }
 
+        
+
+        // PREPARE ORDERS DATA - TANGANI COMBO
+        const orderItems = [];
+
+        for (const order of orders) {
+            if (order.type === 'combo') {
+                // Untuk combo, ambil items dari database
+                const combo = await prisma.combo.findUnique({
+                    where: { id: order.id },
+                    include: {
+                        items: {
+                            include: {
+                                menu: true
+                            }
+                        }
+                    }
+                });
+
+                if (combo && combo.items) {
+                    // Buat order untuk setiap item dalam combo
+                    for (const comboItem of combo.items) {
+                        orderItems.push({
+                            menu_id: comboItem.menu_id,
+                            qty: order.qty,
+                            total: comboItem.menu.harga * order.qty
+                        });
+                    }
+                }
+            } else {
+                // Untuk menu biasa
+                orderItems.push({
+                    menu_id: order.id,
+                    qty: order.qty,
+                    total: order.harga * order.qty
+                });
+            }
+        }
+
+        // 3. Buat Basket (Pesanan) dengan status default 'pending'
         const newBasket = await prisma.basket.create({
             data: {
-                order_type: { connect: { id: order_type_id } },
-                orders: {
-                    create: orders.map(order => ({
-                        menu_id: order.id,
-                        qty: order.qty,
-                        total: (order.harga * order.qty)
-                    }))
-                },
                 customers: { connect: { id: customers.id } },
+                status: 'pending', // Status awal: pending
+                orders: {
+                    create: orderItems
+                },
+                total: total,
+                tipe_order: tipe_order
             },
             include: {
-                order_type: true,
-                orders: true,
-                customers: true
+                orders: {
+                    include: {
+                        menu: true // Include menu info untuk debugging
+                    }
+                },
+                customers: { include: { table: true } }
             }
         });
-
-        // ✅ MARK TOKEN AS USED JIKA ORDER BERHASIL
+        
+        // 5. MARK TOKEN AS USED (Jika menggunakan QR code)
         if (token) {
             await prisma.tableSessions.update({
                 where: { token: token },
@@ -105,35 +135,27 @@ export async function POST(request) {
                     order_id: newBasket.id // Simpan relasi ke order
                 }
             });
-
-            // ✅ UPDATE TABLE STATUS JADI NOT AVAILABLE
-            if (order_type_id === 1 && table) {
-                await prisma.table.update({
-                    where: { table_number: table },
-                    data: { status: 'not_available' }
-                });
-            }
         }
 
-        // Update menu stats (existing code)
+        // 6. Update menu stats
         await Promise.all(
-            orders.map(async (order) => {
+            orderItems.map(async (order) => {
                 await prisma.menu_stats.upsert({
-                where: { menu_id: order.id },
-                update: {
-                    quantity: {
-                    increment: order.qty
+                    where: { menu_id: order.menu_id },
+                    update: {
+                        quantity: {
+                            increment: order.qty
+                        }
+                    },
+                    create: {
+                        menu_id: order.menu_id,
+                        quantity: order.qty
                     }
-                },
-                create: {
-                    menu_id: order.id,
-                    quantity: order.qty
-                }
                 });
             })
         );
 
-        console.log("Berhasil menambah data basket dengan orders:", newBasket);
+        console.log("Berhasil menambah data basket dengan status 'pending':", newBasket.id);
 
         return new Response(JSON.stringify(newBasket), { status: 201 });
 
