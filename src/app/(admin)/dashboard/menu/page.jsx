@@ -75,13 +75,12 @@ const Menu = () => {
   const deleteMenu = (item) => {
     const fetchDelete = async () => {
       await fetch("/api/menu", {
-        method: "POST",
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           menu_id: item.id,
-          action: "delete",
         }),
       });
     };

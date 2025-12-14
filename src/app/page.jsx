@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Lock, User, Coffee, ArrowRight, AlertCircle, CheckCircle } from "lucide-react";
+import { Lock, User, Coffee, ArrowRight, AlertCircle, CheckCircle, Mail, X } from "lucide-react";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -9,6 +9,9 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [notification, setNotification] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetLoading, setResetLoading] = useState(false);
 
   const showNotification = (message, type = "info") => {
     setNotification({ message, type });
@@ -25,6 +28,68 @@ export default function LoginPage() {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleForgotPassword = async () => {
+    if (!resetEmail.trim()) {
+      showNotification("Email harus diisi!", "error");
+      return;
+    }
+
+    if (!resetEmail.includes("@")) {
+      showNotification("Format email tidak valid!", "error");
+      return;
+    }
+
+    setResetLoading(true);
+    showNotification("Mengirim email reset password...", "loading");
+
+    try {
+      // Menggunakan Firebase REST API untuk forgot password
+      const response = await fetch(
+        "https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key=AIzaSyD7F6dJWgUdYF_EAXqqQWpSnK52YbNEDa4",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            requestType: "PASSWORD_RESET",
+            email: resetEmail.trim(),
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error?.message || "Gagal mengirim email reset");
+      }
+
+      showNotification(
+        "Email reset password telah dikirim! Cek inbox atau spam folder Anda.",
+        "success"
+      );
+      setShowForgotPassword(false);
+      setResetEmail("");
+    } catch (error) {
+      console.error("Forgot password error:", error);
+
+      let errorMessage = "Gagal mengirim email reset. Coba lagi ya!";
+      
+      // Error handling spesifik Firebase
+      if (error.message.includes("EMAIL_NOT_FOUND")) {
+        errorMessage = "Email tidak terdaftar dalam sistem.";
+      } else if (error.message.includes("TOO_MANY_ATTEMPTS_TRY_LATER")) {
+        errorMessage = "Terlalu banyak percobaan. Silakan coba lagi nanti.";
+      } else if (error.message.includes("INVALID_EMAIL")) {
+        errorMessage = "Format email tidak valid.";
+      }
+
+      showNotification(errorMessage, "error");
+    } finally {
+      setResetLoading(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -82,7 +147,7 @@ export default function LoginPage() {
 
       // Ambil data role dari response
       const data = await res.json();
-      const userRole = data.role; // API mengembalikan { message: "...", role: "admin" | "kasir" | "dapur" }
+      const userRole = data.role;
 
       showNotification(`Selamat datang, ${userRole}!`, "success");
 
@@ -117,7 +182,8 @@ export default function LoginPage() {
         <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm animate-[slideIn_0.3s_ease] ${
           notification.type === "error" ? "bg-red-50 border-red-200 text-red-800" :
           notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" :
-          "bg-blue-50 border-blue-200 text-blue-800"
+          notification.type === "loading" ? "bg-blue-50 border-blue-200 text-blue-800" :
+          "bg-orange-50 border-orange-200 text-orange-800"
         }`}>
           {notification.type === "loading" && (
             <div className="w-5 h-5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
@@ -125,6 +191,88 @@ export default function LoginPage() {
           {notification.type === "error" && <AlertCircle size={20} className="text-red-600" />}
           {notification.type === "success" && <CheckCircle size={20} className="text-green-600" />}
           <span className="font-medium">{notification.message}</span>
+        </div>
+      )}
+
+      {/* Modal Forgot Password */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all animate-[modalSlideIn_0.3s_ease]">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-xl font-bold text-slate-900">Reset Password</h3>
+                <button
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setResetEmail("");
+                  }}
+                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
+                  disabled={resetLoading}
+                >
+                  <X size={20} className="text-slate-500" />
+                </button>
+              </div>
+
+              <p className="text-slate-600 mb-6">
+                Masukkan email Anda yang terdaftar. Kami akan mengirimkan link untuk mereset password.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                      <Mail size={18} />
+                    </div>
+                    <input
+                      type="email"
+                      value={resetEmail}
+                      onChange={(e) => setResetEmail(e.target.value)}
+                      className="block w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200"
+                      placeholder="email@example.com"
+                      disabled={resetLoading}
+                      onKeyPress={(e) => e.key === 'Enter' && handleForgotPassword()}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetEmail("");
+                    }}
+                    className="flex-1 py-3 px-4 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all duration-200 disabled:opacity-50"
+                    disabled={resetLoading}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                    className="flex-1 py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-orange-200 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-4 focus:ring-orange-200 transition-all duration-200 disabled:opacity-70"
+                  >
+                    {resetLoading ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Mengirim...</span>
+                      </div>
+                    ) : (
+                      "Kirim Reset Link"
+                    )}
+                  </button>
+                </div>
+              </div>
+
+              <div className="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-100">
+                <p className="text-xs text-orange-800">
+                  <span className="font-semibold">Tips:</span> Cek folder spam jika email tidak ditemukan di inbox. Link reset berlaku selama 1 jam.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
@@ -186,7 +334,17 @@ export default function LoginPage() {
 
               {/* Password */}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Password</label>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-sm font-medium text-slate-700">Password</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotPassword(true)}
+                    className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-200 rounded px-1.5 py-0.5 transition-all duration-200"
+                    disabled={isLoading}
+                  >
+                    Lupa password?
+                  </button>
+                </div>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-orange-500 text-slate-400">
                     <Lock size={18} />
@@ -226,6 +384,13 @@ export default function LoginPage() {
                 </div>
               )}
             </button>
+
+            {/* Info reset password */}
+            <div className="text-center">
+              <p className="text-xs text-slate-500">
+                Jika mengalami kendala login, klik "Lupa password?" di atas atau hubungi admin.
+              </p>
+            </div>
           </div>
 
           <div className="mt-8 text-center">
@@ -245,6 +410,17 @@ export default function LoginPage() {
           }
           to {
             transform: translateX(0);
+            opacity: 1;
+          }
+        }
+        
+        @keyframes modalSlideIn {
+          from {
+            transform: translateY(20px) scale(0.95);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0) scale(1);
             opacity: 1;
           }
         }

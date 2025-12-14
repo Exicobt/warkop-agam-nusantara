@@ -45,23 +45,22 @@ export async function POST(req) {
         } catch(err) {
             console.error(err)
         }
+    }    
+}
+
+export async function DELETE() {
+    const { menu_id } = await request.json()
+    try {
+        const deleteMenu = await prisma.menu.delete({
+            where: {
+                id: menu_id
+            }
+        }) 
+
+        return new Response(JSON.stringify(deleteMenu))
+    } catch(err) {
+        console.error(err)
     }
-
-    if(action === 'delete') {
-        try {
-            const deleteMenu = await prisma.menu.delete({
-                where: {
-                    id: menu_id
-                }
-            }) 
-
-            return new Response(JSON.stringify(deleteMenu))
-        } catch(err) {
-            console.error(err)
-        }
-    }
-
-    
 }
 
 GET()

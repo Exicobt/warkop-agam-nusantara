@@ -89,8 +89,9 @@ const KomboMenu = () => {
             <button
               onClick={async () => {
                 toast.dismiss(t.id);
-                await fetch(`/api/combo/${item.id}`, {
+                await fetch(`/api/combo`, {
                   method: "DELETE",
+                  body: JSON.stringify({ id: item.id }),
                 });
                 await fetchKomboMenu();
                 toast.success(`Berhasil menghapus ${item.name}`);

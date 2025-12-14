@@ -280,14 +280,14 @@ const KasirDashboard = () => {
 
   const getStatusColor = (status) => {
     const colors = {
-      pending: "bg-yellow-50 text-yellow-700 border-yellow-200",
-      waiting: "bg-blue-50 text-blue-700 border-blue-200",
-      preparing: "bg-orange-50 text-orange-700 border-orange-200",
-      done: "bg-green-50 text-green-700 border-green-200",
-      finish: "bg-gray-50 text-gray-700 border-gray-200",
-      cancelled: "bg-red-50 text-red-700 border-red-200",
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-300",
+      waiting: "bg-blue-100 text-blue-700 border-blue-300",
+      preparing: "bg-orange-100 text-orange-700 border-orange-300",
+      done: "bg-green-100 text-green-700 border-green-300",
+      finish: "bg-gray-100 text-gray-700 border-gray-300",
+      cancelled: "bg-red-100 text-red-700 border-red-300",
     };
-    return colors[status] || "bg-gray-50 text-gray-700";
+    return colors[status] || "bg-gray-100 text-gray-700";
   };
 
   const getStatusLabel = (status) => {
@@ -434,7 +434,7 @@ const KasirDashboard = () => {
       )}
 
       <div className="flex pt-6 px-4 sm:px-6 pb-6 flex-col max-w-7xl mx-auto">
-        {/* Header dengan Tombol Buat Pesanan */}
+        {/* Header dengan Tombol Buat Pesanan - Tetap sama */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Dashboard Kasir</h1>
@@ -461,114 +461,99 @@ const KasirDashboard = () => {
           </div>
         </div>
 
-        {/* Statistik Cards - Desain lebih modern */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 mb-8">
-          <div className="bg-gradient-to-br from-yellow-50 to-yellow-100 p-4 rounded-2xl shadow-sm border border-yellow-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-yellow-700">Pending</span>
-              <div className="p-2 bg-yellow-200 rounded-lg">
-                <Clock className="w-4 h-4 text-yellow-600" />
-              </div>
+        {/* Statistik Cards - Versi kompak */}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 mb-6">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-yellow-100 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-yellow-600">Pending</span>
+              <Clock className="w-4 h-4 text-yellow-500" />
             </div>
-            <div className="text-2xl font-bold text-yellow-800">{pendingCount}</div>
-            <div className="text-xs text-yellow-600 mt-1">Menunggu konfirmasi</div>
+            <div className="text-2xl font-bold text-yellow-700">{pendingCount}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-2xl shadow-sm border border-blue-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-blue-700">Diproses</span>
-              <div className="p-2 bg-blue-200 rounded-lg">
-                <ChefHat className="w-4 h-4 text-blue-600" />
-              </div>
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-blue-100 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-blue-600">Diproses</span>
+              <ChefHat className="w-4 h-4 text-blue-500" />
             </div>
-            <div className="text-2xl font-bold text-blue-800">{waitingCount + preparingCount}</div>
-            <div className="text-xs text-blue-600 mt-1">Dalam proses dapur</div>
+            <div className="text-2xl font-bold text-blue-700">{waitingCount + preparingCount}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-2xl shadow-sm border border-green-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-green-700">Siap Bayar</span>
-              <div className="p-2 bg-green-200 rounded-lg">
-                <Package className="w-4 h-4 text-green-600" />
-              </div>
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-green-100 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-green-600">Siap Bayar</span>
+              <Package className="w-4 h-4 text-green-500" />
             </div>
-            <div className="text-2xl font-bold text-green-800">{doneCount}</div>
-            <div className="text-xs text-green-600 mt-1">Menunggu pembayaran</div>
+            <div className="text-2xl font-bold text-green-700">{doneCount}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-4 rounded-2xl shadow-sm border border-purple-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-purple-700">Total Pesanan</span>
-              <div className="p-2 bg-purple-200 rounded-lg">
-                <ShoppingBag className="w-4 h-4 text-purple-600" />
-              </div>
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-purple-100 flex flex-col">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-purple-600">Total Pesanan</span>
+              <ShoppingBag className="w-4 h-4 text-purple-500" />
             </div>
-            <div className="text-2xl font-bold text-purple-800">{totalOrders}</div>
-            <div className="text-xs text-purple-600 mt-1">Semua pesanan</div>
+            <div className="text-2xl font-bold text-purple-700">{totalOrders}</div>
           </div>
 
-          <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-4 rounded-2xl shadow-sm border border-indigo-200 col-span-1 sm:col-span-2 lg:col-span-2">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-semibold text-indigo-700">Pendapatan Hari Ini</span>
-              <div className="p-2 bg-indigo-200 rounded-lg">
-                <DollarSign className="w-4 h-4 text-indigo-600" />
-              </div>
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-indigo-100 flex flex-col col-span-2 lg:col-span-2">
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-xs font-medium text-indigo-600">Pendapatan</span>
+              <DollarSign className="w-4 h-4 text-indigo-500" />
             </div>
-            <div className="text-2xl font-bold text-indigo-800">{formatRupiah(todayRevenue)}</div>
-            <div className="text-xs text-indigo-600 mt-1">Dari pesanan selesai hari ini</div>
+            <div className="text-lg font-bold text-indigo-700 truncate">
+              {formatRupiah(todayRevenue)}
+            </div>
           </div>
         </div>
 
-        {/* Filter Section - Improved Design */}
-        <div className="bg-white rounded-2xl shadow-sm p-5 mb-6 border border-gray-100">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
+        {/* Filter Section - Versi kompak */}
+        <div className="bg-white rounded-xl shadow-sm p-4 mb-6 border border-gray-100">
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
             <div className="flex-1 w-full">
               <div className="relative">
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <input
                   type="text"
-                  placeholder="Cari nama pelanggan, meja, atau ID pesanan..."
+                  placeholder="Cari nama, meja, atau ID pesanan..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm transition-all"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
                 />
               </div>
             </div>
 
-            {/* Filter Status - Scrollable */}
-            <div className="w-full lg:w-auto overflow-x-auto">
-              <div className="flex flex-nowrap gap-2 pb-1">
-                {["pending", "waiting", "preparing", "done", "finish", "cancelled"].map((status) => (
-                  <button
-                    key={status}
-                    onClick={() => setFilterStatus(status)}
-                    className={`px-4 py-2.5 rounded-xl text-sm font-medium transition-all flex items-center gap-2 whitespace-nowrap ${
-                      filterStatus === status
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-700"
-                    }`}
-                  >
-                    {getStatusIcon(status)}
-                    {getStatusLabel(status)}
-                  </button>
-                ))}
-              </div>
+            {/* Filter Status */}
+            <div className="flex flex-wrap gap-2">
+              {["pending", "waiting", "preparing", "done", "finish", "cancelled"].map((status) => (
+                <button
+                  key={status}
+                  onClick={() => setFilterStatus(status)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
+                    filterStatus === status
+                      ? "bg-indigo-600 text-white shadow-sm"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {getStatusIcon(status)}
+                  {getStatusLabel(status)}
+                </button>
+              ))}
             </div>
           </div>
 
           {/* Date Filter khusus untuk finish */}
           {filterStatus === "finish" && (
-            <div className="mt-5 pt-5 border-t border-gray-100">
-              <div className="flex items-center gap-2 mb-3">
-                <Calendar className="w-5 h-5 text-gray-500" />
-                <span className="text-sm font-semibold text-gray-700">Filter Tanggal:</span>
+            <div className="mt-4 pt-4 border-t border-gray-100">
+              <div className="flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-gray-500" />
+                <span className="text-sm font-medium text-gray-700">Filter Tanggal:</span>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => { setDateFilter("today"); setCustomDate(""); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "today"
-                      ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                      ? "bg-blue-100 text-blue-700 border border-blue-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -576,9 +561,9 @@ const KasirDashboard = () => {
                 </button>
                 <button
                   onClick={() => { setDateFilter("yesterday"); setCustomDate(""); }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "yesterday"
-                      ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                      ? "bg-blue-100 text-blue-700 border border-blue-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -586,13 +571,12 @@ const KasirDashboard = () => {
                 </button>
                 <button
                   onClick={() => setDateFilter("custom")}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "custom"
-                      ? "bg-blue-100 text-blue-700 border-2 border-blue-300"
+                      ? "bg-blue-100 text-blue-700 border border-blue-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
-                  <Calendar className="w-4 h-4" />
                   Pilih Tanggal
                 </button>
                 
@@ -602,11 +586,11 @@ const KasirDashboard = () => {
                       type="date"
                       value={customDate}
                       onChange={(e) => setCustomDate(e.target.value)}
-                      className="px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
                     />
                     <button
                       onClick={() => setCustomDate("")}
-                      className="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-medium hover:bg-gray-200"
+                      className="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium hover:bg-gray-200"
                     >
                       Clear
                     </button>
@@ -617,212 +601,162 @@ const KasirDashboard = () => {
           )}
         </div>
 
-        {/* Order Cards - Improved Design */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-lg font-semibold text-gray-800">
-              {filterStatus === "all" ? "Semua Pesanan" : getStatusLabel(filterStatus)}
-              <span className="ml-2 text-sm font-normal text-gray-500">
-                ({filteredOrders.length} pesanan)
-              </span>
-            </h2>
-          </div>
-
+        {/* Order Cards - KEMBALI KE TAMPILAN SEBELUMNYA (KOMPAK) */}
+        <div className="space-y-3">
           {filteredOrders.length === 0 ? (
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm p-10 text-center border border-gray-200">
-              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="w-8 h-8 text-gray-400" />
-              </div>
-              <p className="text-gray-400 text-lg font-medium mb-2">
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center border border-gray-100">
+              <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+              <p className="text-gray-400">
                 {searchQuery || filterStatus !== "all"
                   ? "Tidak ada pesanan yang sesuai filter"
                   : "Belum ada pesanan masuk"}
               </p>
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-blue-600 hover:text-blue-700 text-sm font-medium"
-                >
-                  Reset pencarian
-                </button>
-              )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {filteredOrders.map((order) => {
-                const totalAmount = order.total || 0;
-                const tableNumber = order.customers?.table?.table_number;
-                const isTakeaway = tableNumber === "0" || !tableNumber;
+            filteredOrders.map((order) => {
+              const totalAmount = order.total || 0;
 
-                return (
-                  <div
-                    key={order.id}
-                    className="bg-white rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-100 overflow-hidden group"
-                  >
-                    {/* Card Header dengan status */}
-                    <div className="border-b border-gray-100 p-5">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <div className="flex items-center gap-3 mb-2">
-                            <div className={`px-3 py-1.5 rounded-full text-xs font-semibold border flex items-center gap-2 ${getStatusColor(order.status)}`}>
-                              {getStatusIcon(order.status)}
-                              {getStatusLabel(order.status)}
-                            </div>
-                            <span className="text-sm font-medium text-gray-500">
-                              {formatTime(order.create_at)} • {formatDate(order.create_at)}
-                            </span>
-                          </div>
-                          
-                          <h3 className="font-bold text-gray-900 text-xl">
-                            Pesanan #{order.id}
+              return (
+                <div
+                  key={order.id}
+                  className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all border border-gray-100 overflow-hidden"
+                >
+                  <div className="p-4">
+                    {/* Header Row */}
+                    <div className="flex justify-between items-start mb-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="font-bold text-gray-800 text-base">
+                            #{order.id}
                           </h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center gap-1 ${getStatusColor(order.status)}`}>
+                            {getStatusIcon(order.status)}
+                            {getStatusLabel(order.status)}
+                          </span>
                         </div>
                         
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-gray-900">{formatRupiah(totalAmount)}</div>
-                          <div className="text-xs text-gray-500 mt-1">
-                            {order.orders?.length || 0} item
+                        <div className="flex items-center gap-3 text-xs text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            <span>{order.customers?.name || "Walk-in"}</span>
                           </div>
+                          <div className="flex items-center gap-1">
+                            <Table className="w-3 h-3" />
+                            <span>Meja {order.customers?.table?.table_number !== "0" || "Takeaway"}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            <span>{formatTime(order.create_at)} • {formatDate(order.create_at)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="text-lg font-bold text-gray-900">{formatRupiah(totalAmount)}</div>
+                        <div className="text-xs text-gray-500">
+                          {order.orders?.length || 0} item
                         </div>
                       </div>
                     </div>
 
-                    {/* Card Body */}
-                    <div className="p-5">
-                      {/* Customer Info */}
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                            <User className="w-5 h-5 text-blue-600" />
-                          </div>
-                          <div>
-                            <p className="font-medium text-gray-900">{order.customers?.name || "Walk-in Customer"}</p>
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <div className="flex items-center gap-1">
-                                <Table className="w-4 h-4" />
-                                <span>{isTakeaway ? "Takeaway" : `Meja ${tableNumber}`}</span>
-                              </div>
-                              {order.customers?.phone && (
-                                <span className="text-gray-400">•</span>
-                              )}
-                              {order.customers?.phone && (
-                                <span className="text-blue-600">{order.customers.phone}</span>
-                              )}
+                    {/* Order Items (Collapsible jika banyak) */}
+                    {order.orders && order.orders.length > 0 && (
+                      <div className="mt-3 mb-3">
+                        <div className="flex flex-wrap gap-1">
+                          {order.orders.slice(0, 3).map((item, idx) => (
+                            <div
+                              key={idx}
+                              className="px-2 py-1 bg-gray-50 rounded text-xs border border-gray-100"
+                            >
+                              <span className="font-medium">{item.qty}x</span>{" "}
+                              <span className="text-gray-700">{item.menu?.nama?.slice(0, 15)}</span>
+                              {item.menu?.nama?.length > 15 && "..."}
                             </div>
-                          </div>
+                          ))}
+                          {order.orders.length > 3 && (
+                            <div className="px-2 py-1 bg-gray-100 rounded text-xs text-gray-500">
+                              +{order.orders.length - 3} lagi
+                            </div>
+                          )}
                         </div>
                       </div>
+                    )}
 
-                      {/* Order Items */}
-                      {order.orders && order.orders.length > 0 && (
-                        <div className="mb-4">
-                          <div className="text-sm font-medium text-gray-700 mb-2">Items:</div>
-                          <div className="space-y-2">
-                            {order.orders.slice(0, 4).map((item, idx) => (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
-                              >
-                                <div className="flex-1">
-                                  <span className="font-medium text-gray-900">
-                                    {item.qty}x {item.menu?.nama || item.name || "Item"}
-                                  </span>
-                                  {item.notes && (
-                                    <p className="text-xs text-gray-500 mt-1 italic">Catatan: {item.notes}</p>
-                                  )}
-                                </div>
-                                <div className="text-sm font-medium text-gray-700">
-                                  {formatRupiah(item.price * item.qty)}
-                                </div>
-                              </div>
-                            ))}
-                            {order.orders.length > 4 && (
-                              <div className="text-center py-2 text-sm text-gray-500">
-                                +{order.orders.length - 4} item lainnya
-                              </div>
-                            )}
-                          </div>
+                    {/* Action Buttons */}
+                    <div className="pt-3 border-t border-gray-100">
+                      {order.status === "pending" && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleAcceptOrder(order)}
+                            disabled={loading}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                          >
+                            <CheckCircle className="w-4 h-4" />
+                            Terima
+                          </button>
+                          <button
+                            onClick={() => handleRejectOrder(order)}
+                            disabled={loading}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            Tolak
+                          </button>
                         </div>
                       )}
 
-                      {/* Action Buttons */}
-                      <div className="pt-4 border-t border-gray-100">
-                        {order.status === "pending" && (
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => handleAcceptOrder(order)}
-                              disabled={loading}
-                              className="flex-1 flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
-                            >
-                              <CheckCircle className="w-5 h-5" />
-                              Terima Pesanan
-                            </button>
-                            <button
-                              onClick={() => handleRejectOrder(order)}
-                              disabled={loading}
-                              className="flex-1 flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
-                            >
-                              <XCircle className="w-5 h-5" />
-                              Tolak
-                            </button>
-                          </div>
-                        )}
+                      {order.status === "done" && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleFinishOrder(order)}
+                            disabled={loading}
+                            className="flex-1 flex items-center justify-center gap-2 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-semibold transition-all disabled:opacity-50"
+                          >
+                            <DollarSign className="w-4 h-4" />
+                            Bayar
+                          </button>
+                          <button
+                            onClick={() => handlePrintBill(order)}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-semibold transition-all"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
 
-                        {order.status === "done" && (
-                          <div className="flex gap-3">
-                            <button
-                              onClick={() => handleFinishOrder(order)}
-                              disabled={loading}
-                              className="flex-1 flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-purple-600 to-violet-700 hover:from-purple-700 hover:to-violet-800 text-white rounded-xl text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-sm hover:shadow"
-                            >
-                              <DollarSign className="w-5 h-5" />
-                              Proses Pembayaran
-                            </button>
-                            <button
-                              onClick={() => handlePrintBill(order)}
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl text-sm font-semibold transition-all"
-                            >
-                              <Printer className="w-5 h-5" />
-                              Print
-                            </button>
+                      {(order.status === "waiting" || order.status === "preparing") && (
+                        <div className="flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 text-sm font-medium">
+                          <Clock className="w-4 h-4" />
+                          Menunggu dapur...
+                        </div>
+                      )}
+                      
+                      {order.status === "finish" && (
+                        <div className="flex gap-2">
+                          <div className="flex-1 flex items-center justify-center gap-2 py-2 bg-gray-50 text-gray-500 rounded-lg border border-gray-200 text-sm font-medium">
+                            <CheckCircle className="w-4 h-4" />
+                            Selesai
                           </div>
-                        )}
+                          <button
+                            onClick={() => handlePrintBill(order)}
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-semibold transition-all"
+                          >
+                            <Printer className="w-4 h-4" />
+                          </button>
+                        </div>
+                      )}
 
-                        {(order.status === "waiting" || order.status === "preparing") && (
-                          <div className="flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-xl border border-blue-200 text-sm font-semibold">
-                            <Clock className="w-5 h-5 animate-pulse" />
-                            Pesanan sedang diproses dapur...
-                          </div>
-                        )}
-                        
-                        {order.status === "finish" && (
-                          <div className="flex gap-3">
-                            <div className="flex-1 flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-gray-100 to-gray-200 text-gray-600 rounded-xl text-sm font-semibold">
-                              <CheckCircle className="w-5 h-5" />
-                              Transaksi Selesai
-                            </div>
-                            <button
-                              onClick={() => handlePrintBill(order)}
-                              className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-blue-100 to-blue-200 hover:from-blue-200 hover:to-blue-300 text-blue-700 rounded-xl text-sm font-semibold transition-all"
-                            >
-                              <Printer className="w-5 h-5" />
-                              Ulang Print
-                            </button>
-                          </div>
-                        )}
-
-                        {order.status === "cancelled" && (
-                          <div className="flex items-center justify-center gap-3 py-3 bg-gradient-to-r from-red-50 to-red-100 text-red-700 rounded-xl border border-red-200 text-sm font-semibold">
-                            <XCircle className="w-5 h-5" />
-                            Pesanan Dibatalkan
-                          </div>
-                        )}
-                      </div>
+                      {order.status === "cancelled" && (
+                        <div className="flex items-center justify-center gap-2 py-2 bg-red-50 text-red-600 rounded-lg border border-red-200 text-sm font-medium">
+                          <XCircle className="w-4 h-4" />
+                          Dibatalkan
+                        </div>
+                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
