@@ -12,7 +12,7 @@ export async function POST(request) {
     const token = uuidv4();
     const now = new Date();
     const expired_at = new Date(now.getTime() + 4 * 60 * 60 * 1000);
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
     const qrUrl = `${baseUrl}/kasir/${token}`;
 
     // 🔥 Expire session lama

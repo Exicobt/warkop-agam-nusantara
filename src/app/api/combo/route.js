@@ -72,12 +72,25 @@ export async function GET() {
 
 export async function DELETE() {
   try {
-    // Hapus semua combo items terlebih dahulu
-    await prisma.comboItem.deleteMany();
-    
-    // Hapus semua combos
-    await prisma.combo.deleteMany();
+    const { id } = await request.json();
 
+    if (id) {
+    // Hapus semua combo items terlebih dahulu
+      await prisma.comboItem.deleteMany({
+        where: { combo_id: Number(id) },
+      });
+
+      // Hapus combo berdasarkan ID
+      await prisma.combo.delete({
+        where: { id: Number(id) },
+      });
+    } else {
+      // Hapus semua combo items terlebih dahulu
+      await prisma.comboItem.deleteMany();
+
+      // Hapus semua combos
+      await prisma.combo.deleteMany();
+    }
     return NextResponse.json({ message: 'Semua kombo menu berhasil dihapus' });
   } catch (error) {
     console.error('Error deleting all combos:', error);
@@ -85,7 +98,9 @@ export async function DELETE() {
       { error: 'Gagal menghapus semua kombo menu' },
       { status: 500 }
     );
+  
   }
+  
 }
 
 export async function PUT(request) {
