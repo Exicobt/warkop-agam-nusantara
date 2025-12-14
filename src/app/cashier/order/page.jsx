@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Navbar from "../components/Navbar";
 import {
   Select,
   SelectContent,
@@ -32,15 +31,8 @@ import {
 } from "@phosphor-icons/react/dist/ssr";
 import toast from "react-hot-toast";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
-import { TableIcon } from "lucide-react";
 
 const Menu = () => {
-  const params = useParams();
-  const router = useRouter();
-  const token = params.token;
-
-  const [session, setSession] = useState(null);
   const [views, setViews] = useState("grid");
   const [activeCategory, setActiveCategory] = useState("All");
   const [inOrder, setInOrder] = useState(null);
@@ -53,39 +45,7 @@ const Menu = () => {
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");
 
-  useEffect(() => {
-    if (!token) {
-      router.push("/kasir/expired");
-      return;
-    }
-
-    const validateSession = async () => {
-      try {
-        const res = await fetch(`/api/orders/validate?token=${token}`);
-        const data = await res.json();
-
-        console.log("🔍 API Validation Response:", data);
-
-        if (!data.valid) {
-          toast.error(data.error || "QR code sudah tidak valid");
-          router.push("/kasir/expired");
-          return;
-        }
-
-        // API return { valid: true, table_number: "1", session_id: "..." }
-        setSession({
-          table_number: data.table_number,
-          session_id: data.session_id,
-        });
-      } catch (error) {
-        console.error("Error validating session:", error);
-        toast.error("Terjadi kesalahan");
-        router.push("/kasir/expired");
-      }
-    };
-
-    validateSession();
-  }, [token, router]);
+  const customerName = useRef(null);
 
   const totalItem = allOrders.reduce((sum, item) => sum + item.qty, 0);
   const totalHarga = allOrders.reduce(
@@ -93,6 +53,10 @@ const Menu = () => {
     0
   );
   const hargaTotal = totalHarga;
+
+  const handleName = () => {
+    setName(customerName.current.value);
+  }
 
   const updateQuantity = (nama, newQty) => {
     if (newQty < 1) return;
@@ -125,14 +89,13 @@ const Menu = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           orders: allOrders,
-          name:
-            `Meja ${session.table_number}`,
-          table: session.table_number ,
+          name: name,
+          table: "0",
           total: hargaTotal,
-          tipe_order: token ? "dine_in" : "take_away",
+          tipe_order: "take_away",
           payment_method_id: parseInt(paymentMethod),
-          qr_token: token,
-          session_id: session?.session_id, // tambahkan session_id jika perlu
+          qr_token:  null,
+          session_id: null,
         }),
       });
 
@@ -229,12 +192,10 @@ const Menu = () => {
     });
   }, [inOrder]);
 
-  // Filter data berdasarkan kategori dan search term
   const getFilteredData = () => {
     let filteredData = [];
 
     if (searchTerm !== "") {
-      // Filter menu berdasarkan search term
       const filteredMenu = menu.filter((item) =>
         item.nama.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -308,8 +269,7 @@ const Menu = () => {
   const groupedData = getGroupedData();
 
   return (
-    <div className="relative pt-15 w-full min-h-screen md:flex gap-1">
-      <Navbar placeholder="Menu" view={views} setView={setViews} />
+    <div className="relative w-full min-h-screen md:flex gap-1">
 
       <div className="container mx-auto py-6">
         <div className="flex flex-col lg:flex-row gap-6">
@@ -432,30 +392,7 @@ const Menu = () => {
             </div>
 
             <div className="mb-6">
-
-              {/* INFORMASI MEJA DARI QR */}
-              {session && (
-                <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-200 rounded-xl shadow-sm">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-green-100 rounded-lg">
-                        <TableIcon size={20} className="text-green-600" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-green-800">
-                          Meja
-                        </p>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold text-green-700">
-                        #{session.table_number}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
+              <input type="text" placeholder="Nama customer" className="w-full p-2 border border-gray-300 rounded-md" ref={customerName} onBlur={handleName}/>
               <Select
                 onValueChange={(val) => setPaymentMethod(val)}
                 value={paymentMethod}

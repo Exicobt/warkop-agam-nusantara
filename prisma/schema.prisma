@@ -25,6 +25,7 @@ model Basket {
   customers_id      Int?
   status            kitchen_status  @default(pending)
   total             Int?
+  tipe_order        order_tipe      @default(dine_in)
   payment_method_id Int?
   customers         Customers?      @relation(fields: [customers_id], references: [id])
   payment_method    Payment_method? @relation(fields: [payment_method_id], references: [id])
@@ -182,6 +183,11 @@ enum menu_kategori {
   foods
   drinks
   snacks
+}
+
+enum order_tipe {
+  dine_in
+  take_away
 }
 
 enum session_status {

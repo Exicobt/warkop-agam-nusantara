@@ -4,9 +4,8 @@ const prisma = new PrismaClient();
 
 export async function POST(request) {
     try {
-        const { orders, name, table, total, token } = await request.json(); 
+        const { orders, name, table, total, tipe_order, token } = await request.json(); 
 
-        // 1. VALIDASI TOKEN JIKA ADA (untuk QR code order)
         if (token) {
             const validSession = await prisma.tableSessions.findFirst({
                 where: {
@@ -14,7 +13,7 @@ export async function POST(request) {
                     status: 'active',
                     expired_at: { gt: new Date() },
                     table: {
-                        status: 'available' // Pastikan meja masih available saat scan
+                        status: 'available' 
                     }
                 }
             });
@@ -32,32 +31,42 @@ export async function POST(request) {
         let customers;
         let tableIdForUpdate = null; // Untuk menyimpan ID meja jika ada
 
-        const tableCheck = await prisma.table.findFirst({
-            where: { 
-                table_number: table,
-                status: 'available'
-            }
-        });
-
-        if (!tableCheck) {
-            return new Response(
-                JSON.stringify({ 
-                    error: "Meja tidak tersedia atau sedang digunakan." 
-                }), 
-                { status: 400 }
-            );
-        }
-        
-        tableIdForUpdate = tableCheck.id; // Simpan ID meja
-        
-        customers = await prisma.customers.create({
-            data: {
-                name: name,
-                table: {
-                    connect: { id: tableIdForUpdate }
+        if(tipe_order === 'dine_in') {
+            const tableCheck = await prisma.table.findFirst({
+                where: { 
+                    table_number: table,
+                    status: 'available'
                 }
+            });
+
+            if (!tableCheck) {
+                return new Response(
+                    JSON.stringify({ 
+                        error: "Meja tidak tersedia atau sedang digunakan." 
+                    }), 
+                    { status: 400 }
+                );
             }
-        });
+        
+            tableIdForUpdate = tableCheck.id; // Simpan ID meja
+            
+            customers = await prisma.customers.create({
+                data: {
+                    name: name,
+                    table: {
+                        connect: { id: tableIdForUpdate }
+                    }
+                }
+            });
+        } else {
+            customers = await prisma.customers.create({
+                data: {
+                    name: name
+                }
+            });
+        }
+
+        
 
         // PREPARE ORDERS DATA - TANGANI COMBO
         const orderItems = [];
@@ -104,7 +113,8 @@ export async function POST(request) {
                 orders: {
                     create: orderItems
                 },
-                total: total
+                total: total,
+                tipe_order: tipe_order
             },
             include: {
                 orders: {
