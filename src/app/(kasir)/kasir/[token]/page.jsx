@@ -49,6 +49,7 @@ const Menu = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [menu, setMenu] = useState([]);
   const [combos, setCombos] = useState([]);
+  const [tables, setTables] = useState([]);
   const [name, setName] = useState("");
   const [paymentMethods, setPaymentMethods] = useState([]);
   const [paymentMethod, setPaymentMethod] = useState("");

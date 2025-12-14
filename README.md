@@ -3,7 +3,7 @@
 ## 🚀 1. Clone Repository
 ```bash
 git clone https://github.com/Exicobt/warkop-agam-nusantara.git
-cd aplikasi-kasir
+cd warkop-agam-nusantara
 ```
 
 ---
@@ -12,10 +12,6 @@ cd aplikasi-kasir
 ```bash
 npm install
 ```
-> Kamu bisa membuat JWT Secret baru dengan perintah:
-> ```bash
-> node -e "console.log(require('crypto').randomBytes(64).toString('base64'))"
-> ```
 
 ---
 
