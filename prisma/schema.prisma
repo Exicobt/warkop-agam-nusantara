@@ -1,0 +1,205 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Admin_account {
+  id            Int                 @id @default(autoincrement())
+  email         String?             @db.VarChar(100)
+  full_name     String?             @db.VarChar(100)
+  role          admin_account_role? @default(kasir)
+  uid           String              @unique @db.VarChar(100)
+  website_order Website_order[]
+  orders        Orders[]            @relation("Admin_accountToOrders")
+
+  @@map("admin_account")
+}
+
+model Basket {
+  id                Int             @id @default(autoincrement())
+  create_at         DateTime        @default(now()) @db.Timestamp(0)
+  customers_id      Int?
+  status            kitchen_status  @default(pending)
+  total             Int?
+  tipe_order        order_tipe      @default(dine_in)
+  payment_method_id Int?
+  customers         Customers?      @relation(fields: [customers_id], references: [id])
+  payment_method    Payment_method? @relation(fields: [payment_method_id], references: [id])
+  orders            Orders[]
+
+  @@index([customers_id])
+  @@index([payment_method_id])
+  @@index([status])
+  @@index([create_at])
+  @@map("basket")
+}
+
+model Payment_method {
+  id     Int      @id @default(autoincrement())
+  name   String
+  basket Basket[]
+
+  @@map("payment_method")
+}
+
+model Orders {
+  id            Int             @id @default(autoincrement())
+  basket_id     Int?
+  menu_id       Int?
+  qty           Int
+  total         Int
+  basket        Basket?         @relation(fields: [basket_id], references: [id])
+  menu          Menu?           @relation(fields: [menu_id], references: [id])
+  Website_order Website_order[]
+  Admin_account Admin_account[] @relation("Admin_accountToOrders")
+
+  @@index([basket_id])
+  @@index([menu_id])
+  @@map("orders")
+}
+
+model Customers {
+  id        Int      @id @default(autoincrement())
+  name      String   @db.VarChar(255)
+  create_at DateTime @default(now()) @db.Timestamp(0)
+  table_id  Int?
+  basket    Basket[]
+  table     Table?   @relation(fields: [table_id], references: [id])
+
+  @@index([table_id])
+  @@map("customers")
+}
+
+model Table {
+  id              Int             @id @default(autoincrement())
+  table_number    String          @unique @db.VarChar(10)
+  status          table_status?   @default(available)
+  qr_token        String?         @db.VarChar(100)
+  qr_generated_at DateTime?       @db.Timestamp(0)
+  customers       Customers[]
+  table_sessions  TableSessions[]
+
+  @@map("table")
+}
+
+model Website_order {
+  id            Int            @id @default(autoincrement())
+  table_number  String?        @db.VarChar(10)
+  order_id      Int?
+  admin_id      Int?
+  created_at    DateTime       @default(now()) @db.Timestamp(0)
+  menu_id       Int?
+  menu          Menu?          @relation(fields: [menu_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  orders        Orders?        @relation(fields: [order_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  admin_account Admin_account? @relation(fields: [admin_id], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([admin_id])
+  @@index([order_id])
+  @@index([menu_id])
+  @@map("website_order")
+}
+
+model Menu {
+  id            Int             @id @default(autoincrement())
+  nama          String
+  kategori      menu_kategori
+  harga         Int
+  gambar        String          @db.Text
+  orders        Orders[]
+  Website_order Website_order[]
+  menu_stats    Menu_stats[]
+  comboItems    ComboItem[]
+
+  @@map("menu")
+}
+
+model Menu_stats {
+  menu_id  Int   @id
+  quantity Int
+  menu     Menu? @relation(fields: [menu_id], references: [id])
+
+  @@map("menu_stats")
+}
+
+model Combo {
+  id    Int         @id @default(autoincrement())
+  name  String
+  price Int
+  items ComboItem[]
+
+  @@map("combo")
+}
+
+model ComboItem {
+  id       Int @id @default(autoincrement())
+  combo_id Int
+  menu_id  Int
+
+  combo Combo @relation(fields: [combo_id], references: [id], onDelete: Cascade)
+  menu  Menu  @relation(fields: [menu_id], references: [id])
+
+  @@index([combo_id])
+  @@index([menu_id])
+  @@map("combo_item")
+}
+
+model TableSessions {
+  id           String          @id @default(uuid())
+  table_number String          @db.VarChar(10)
+  token        String          @unique @db.VarChar(100)
+  status       session_status? @default(active)
+  created_at   DateTime        @default(now()) @db.Timestamp(0)
+  expired_at   DateTime?       @db.Timestamp(0)
+  order_id     Int?
+
+  table Table? @relation(fields: [table_number], references: [table_number], onDelete: Cascade, onUpdate: Cascade)
+
+  @@index([table_number])
+  @@index([status])
+  @@index([expired_at])
+  @@map("table_sessions")
+}
+
+enum kitchen_status {
+  pending
+  waiting
+  preparing
+  done
+  finish
+  cancelled
+}
+
+enum table_status {
+  available
+  occupied
+  not_available
+}
+
+enum admin_account_role {
+  admin
+  kasir
+  dapur
+}
+
+enum menu_kategori {
+  foods
+  drinks
+  snacks
+}
+
+enum order_tipe {
+  dine_in
+  take_away
+}
+
+enum session_status {
+  active
+  used
+  expired
+  cancelled
+}
