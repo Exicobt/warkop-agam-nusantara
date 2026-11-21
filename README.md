@@ -80,11 +80,7 @@ Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
 ### Pemesanan Pelanggan (QR Meja)
 
 <p align="center">
-  <img src="docs/screenshots/pelanggan-1.png" alt="Pilih menu" width="240" />
-  &nbsp;
-  <img src="docs/screenshots/pelanggan-2.png" alt="Keranjang pesanan" width="240" />
-  &nbsp;
-  <img src="docs/screenshots/pelanggan-3.png" alt="Pesanan terkirim" width="240" />
+  <img src="docs/screenshots/warkop-pesanan-qr.jpg" alt="Pesanan" width="240" />
 </p>
 
 ### Halaman Login
