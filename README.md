@@ -91,7 +91,7 @@ Efek samping ditangani atomik di server (`src/lib/order-status.js`): meja menjad
 ### Instalasi
 
 ```bash
-git clone <url-repo-anda>
+git clone https://github.com/Exicobt/warkop-agam-nusantara.git
 cd warkop-agam-nusantara
 
 npm install
