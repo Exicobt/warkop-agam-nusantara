@@ -25,9 +25,9 @@ const CardMenu = ({ view, data, onOrder }) => {
     // Jika kategori adalah 'combo', tampilkan placeholder dengan ikon
     if (item.kategori === "combo" || item.type === "combo") {
       return (
-        <div className={`${view === "grid" ? "w-full h-48" : "w-20 h-20"} bg-orange-50 flex flex-col items-center justify-center p-4`}>
-          <Package size={view === "grid" ? 48 : 24} className="text-orange-400 mb-2" />
-          <span className={`font-medium text-orange-600 text-center ${view === "grid" ? "text-sm" : "text-xs"}`}>
+        <div className={`${view === "grid" ? "w-full h-48" : "w-20 h-20"} bg-brand-50 flex flex-col items-center justify-center p-4`}>
+          <Package size={view === "grid" ? 48 : 24} className="text-brand-400 mb-2" />
+          <span className={`font-medium text-brand-600 text-center ${view === "grid" ? "text-sm" : "text-xs"}`}>
             Kombo Menu
           </span>
         </div>
@@ -50,7 +50,7 @@ const CardMenu = ({ view, data, onOrder }) => {
   const renderComboBadge = (item) => {
     if (item.kategori === "combo" || item.type === "combo") {
       return (
-        <div className="absolute top-2 left-2 bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs font-medium z-10">
+        <div className="absolute top-2 left-2 bg-brand-100 text-brand-800 px-2 py-1 rounded-full text-xs font-medium z-10">
           <Package size={12} className="inline mr-1" />
           Kombo
         </div>

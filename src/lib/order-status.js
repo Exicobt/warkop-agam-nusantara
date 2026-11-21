@@ -36,6 +36,12 @@ export async function transitionOrder(basketId, nextStatus, role) {
     return { ok: false, status: 404, error: "Pesanan tidak ditemukan." };
   }
 
+  // Idempoten: bila status sudah sama (tombol ditekan dua kali, atau dua layar
+  // dapur membuka pesanan yang sama), anggap berhasil — bukan error 400.
+  if (basket.status === nextStatus) {
+    return { ok: true, basket, unchanged: true };
+  }
+
   const allowedRoles = TRANSITIONS[basket.status]?.[nextStatus];
   if (!allowedRoles) {
     return {

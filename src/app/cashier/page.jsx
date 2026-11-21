@@ -23,6 +23,7 @@ import {
   ArrowRight
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { statusMeta } from "@/lib/format";
 
 const KasirDashboard = () => {
   const router = useRouter();
@@ -198,17 +199,9 @@ const KasirDashboard = () => {
     });
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      pending: "bg-yellow-100 text-yellow-700 border-yellow-300",
-      waiting: "bg-blue-100 text-blue-700 border-blue-300",
-      preparing: "bg-orange-100 text-orange-700 border-orange-300",
-      done: "bg-green-100 text-green-700 border-green-300",
-      finish: "bg-gray-100 text-gray-700 border-gray-300",
-      cancelled: "bg-red-100 text-red-700 border-red-300",
-    };
-    return colors[status] || "bg-gray-100 text-gray-700";
-  };
+  // Warna status dibuat unik per status (sama dengan dashboard & dapur).
+  const getStatusColor = (status) =>
+    `${statusMeta(status).badge} ring-1 ring-inset border-transparent`;
 
   const getStatusLabel = (status) => {
     const labels = {
@@ -345,9 +338,9 @@ const KasirDashboard = () => {
   return (
     <div className="w-full min-h-screen font-sans mt-10">
       {notification.show && (
-        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-2xl transition-all duration-300 ${
+        <div className={`fixed top-4 right-4 z-50 px-6 py-3 rounded-xl shadow-xl transition-all duration-300 ${
           notification.type === "success" ? "bg-green-600" : 
-          notification.type === "error" ? "bg-red-600" : "bg-blue-600"
+          notification.type === "error" ? "bg-red-600" : "bg-brand-600"
         } text-white font-medium`}>
           {notification.message}
         </div>
@@ -372,7 +365,7 @@ const KasirDashboard = () => {
             
             <button
               onClick={handleCreateOrder}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg text-sm font-semibold"
+              className="flex items-center gap-2 px-5 py-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-xl transition-all shadow-md hover:shadow-md text-sm font-semibold"
             >
               <Plus className="w-5 h-5" />
               Buat Pesanan
@@ -391,12 +384,12 @@ const KasirDashboard = () => {
             <div className="text-2xl font-bold text-yellow-700">{pendingCount}</div>
           </div>
 
-          <div className="bg-white p-3 rounded-xl shadow-sm border border-blue-100 flex flex-col">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-brand-100 flex flex-col">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-blue-600">Diproses</span>
-              <ChefHat className="w-4 h-4 text-blue-500" />
+              <span className="text-xs font-medium text-brand-600">Diproses</span>
+              <ChefHat className="w-4 h-4 text-brand-500" />
             </div>
-            <div className="text-2xl font-bold text-blue-700">{waitingCount + preparingCount}</div>
+            <div className="text-2xl font-bold text-brand-700">{waitingCount + preparingCount}</div>
           </div>
 
           <div className="bg-white p-3 rounded-xl shadow-sm border border-green-100 flex flex-col">
@@ -415,12 +408,12 @@ const KasirDashboard = () => {
             <div className="text-2xl font-bold text-purple-700">{totalOrders}</div>
           </div>
 
-          <div className="bg-white p-3 rounded-xl shadow-sm border border-indigo-100 flex flex-col col-span-2 lg:col-span-2">
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-brand-100 flex flex-col col-span-2 lg:col-span-2">
             <div className="flex items-center justify-between mb-1">
-              <span className="text-xs font-medium text-indigo-600">Pendapatan</span>
-              <DollarSign className="w-4 h-4 text-indigo-500" />
+              <span className="text-xs font-medium text-brand-600">Pendapatan</span>
+              <DollarSign className="w-4 h-4 text-brand-500" />
             </div>
-            <div className="text-lg font-bold text-indigo-700 truncate">
+            <div className="text-lg font-bold text-brand-700 truncate">
               {formatRupiah(todayRevenue)}
             </div>
           </div>
@@ -437,7 +430,7 @@ const KasirDashboard = () => {
                   placeholder="Cari nama, meja, atau ID pesanan..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                  className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"
                 />
               </div>
             </div>
@@ -450,7 +443,7 @@ const KasirDashboard = () => {
                   onClick={() => setFilterStatus(status)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1 ${
                     filterStatus === status
-                      ? "bg-indigo-600 text-white shadow-sm"
+                      ? "bg-brand-600 text-white shadow-sm"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -473,7 +466,7 @@ const KasirDashboard = () => {
                   onClick={() => { setDateFilter("today"); setCustomDate(""); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "today"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
+                      ? "bg-brand-100 text-brand-700 border border-brand-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -483,7 +476,7 @@ const KasirDashboard = () => {
                   onClick={() => { setDateFilter("yesterday"); setCustomDate(""); }}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "yesterday"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
+                      ? "bg-brand-100 text-brand-700 border border-brand-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -493,7 +486,7 @@ const KasirDashboard = () => {
                   onClick={() => setDateFilter("custom")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
                     dateFilter === "custom"
-                      ? "bg-blue-100 text-blue-700 border border-blue-300"
+                      ? "bg-brand-100 text-brand-700 border border-brand-300"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -650,7 +643,7 @@ const KasirDashboard = () => {
                       )}
 
                       {(order.status === "waiting" || order.status === "preparing") && (
-                        <div className="flex items-center justify-center gap-2 py-2 bg-blue-50 text-blue-600 rounded-lg border border-blue-200 text-sm font-medium">
+                        <div className="flex items-center justify-center gap-2 py-2 bg-brand-50 text-brand-600 rounded-lg border border-brand-200 text-sm font-medium">
                           <Clock className="w-4 h-4" />
                           Menunggu dapur...
                         </div>
@@ -664,7 +657,7 @@ const KasirDashboard = () => {
                           </div>
                           <button
                             onClick={() => handlePrintBill(order)}
-                            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-lg text-sm font-semibold transition-all"
+                            className="flex items-center justify-center gap-2 px-4 py-2 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-lg text-sm font-semibold transition-all"
                           >
                             <Printer className="w-4 h-4" />
                           </button>

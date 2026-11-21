@@ -1,7 +1,8 @@
 import { SignJWT, jwtVerify } from "jose";
 
 export const AUTH_COOKIE = "token";
-export const SESSION_MAX_AGE = 60 * 60 * 8; // 8 jam, detik
+export const SESSION_MAX_AGE = 60 * 60 * 8; // 8 jam, detik (diperpanjang otomatis saat aktif)
+export const SESSION_ABSOLUTE_MAX_AGE = 60 * 60 * 24; // batas mutlak sejak login: 24 jam
 export const ROLES = ["admin", "kasir", "dapur"];
 
 function getSecret() {

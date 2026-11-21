@@ -133,7 +133,7 @@ const Menu = () => {
   }, [fetchMenu]);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
 
         <div className="flex-1 p-6">
@@ -155,7 +155,7 @@ const Menu = () => {
                 </button>
                 <button
                   onClick={() => router.push("/dashboard/menu/tambah")}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Tambah Menu
@@ -163,7 +163,7 @@ const Menu = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1">
@@ -173,7 +173,7 @@ const Menu = () => {
                       placeholder="Cari menu..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -230,7 +230,7 @@ const Menu = () => {
                                 </div>
                               </TableCell>
                               <TableCell>
-                                <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+                                <span className="bg-brand-100 text-brand-800 px-3 py-1 rounded-full text-sm font-medium">
                                   {menu.kategori}
                                 </span>
                               </TableCell>

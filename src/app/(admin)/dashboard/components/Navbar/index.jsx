@@ -1,348 +1,335 @@
 "use client";
 
-import { Menu, Bell, Search, Store, ChevronDown, Utensils, User, Loader2, X, Receipt, Tag, AlertTriangle, CheckCircle, Info, LogOut } from "lucide-react";
-import Link from "next/link";
-import { useState, useEffect, useRef, useCallback } from "react";
-// import Link from "next/link"; // Aktifin di local
+import { useCallback, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
+import Image from "next/image";
+import {
+  AlertTriangle,
+  Bell,
+  BellRing,
+  ChevronDown,
+  Info,
+  Loader2,
+  LogOut,
+  Menu as MenuIcon,
+  Receipt,
+  Search,
+  Utensils,
+  X,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CATEGORY_LABEL, formatRupiah } from "@/lib/format";
+import { NAV_GROUPS, isActivePath } from "../Sidebar";
 
-const Navbar = () => {
-  // --- STATE SEARCH ---
+const NOTIF_POLL_MS = 30000;
+
+function usePageTitle() {
+  const pathname = usePathname();
+  for (const group of NAV_GROUPS) {
+    const hit = group.items.find((item) => isActivePath(pathname, item));
+    if (hit) return hit.label;
+  }
+  return "Dashboard";
+}
+
+const Navbar = ({ onMenuClick }) => {
+  const title = usePageTitle();
+
   const [query, setQuery] = useState("");
   const [results, setResults] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [searching, setSearching] = useState(false);
   const [showResults, setShowResults] = useState(false);
   const [selectedMenu, setSelectedMenu] = useState(null);
 
-  // --- STATE NOTIFIKASI (REAL TIME) ---
   const [showNotif, setShowNotif] = useState(false);
-  const [notifications, setNotifications] = useState([]); // Awalnya kosong, nunggu fetch
-  const [isFetchingNotif, setIsFetchingNotif] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [readIds, setReadIds] = useState(() => new Set());
+  const [showUser, setShowUser] = useState(false);
 
   const searchRef = useRef(null);
   const notifRef = useRef(null);
+  const userRef = useRef(null);
 
-  // --- 1. FETCH NOTIFIKASI DARI DATABASE ---
-  const fetchNotifications = async () => {
-    setIsFetchingNotif(true);
+  const fetchNotifications = useCallback(async () => {
     try {
       const res = await fetch("/api/notifications");
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(data);
-      }
+      if (res.ok) setNotifications(await res.json());
     } catch (error) {
-      console.error("Gagal ambil notif:", error);
-    } finally {
-      setIsFetchingNotif(false);
+      console.error("Gagal ambil notifikasi:", error);
     }
-  };
-
-  // --- 2. JALANKAN SAAT PERTAMA LOAD & TIAP 30 DETIK (POLLING) ---
-  useEffect(() => {
-    fetchNotifications(); // Panggil pas pertama buka
-
-    // Set interval buat ngecek database tiap 30 detik
-    // Biar admin tau kalo ada orderan baru tanpa refresh page
-    const intervalId = setInterval(() => {
-      fetchNotifications();
-    }, 30000);
-
-    return () => clearInterval(intervalId); // Bersihin timer pas pindah halaman
   }, []);
 
+  useEffect(() => {
+    fetchNotifications();
+    const id = setInterval(fetchNotifications, NOTIF_POLL_MS);
+    return () => clearInterval(id);
+  }, [fetchNotifications]);
+
   const performSearch = useCallback(async (keyword) => {
-    setIsLoading(true);
+    setSearching(true);
     setShowResults(true);
     try {
       const res = await fetch(`/api/search?q=${encodeURIComponent(keyword)}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      setResults(data);
+      setResults(await res.json());
     } catch (error) {
       console.error(error);
     } finally {
-      setIsLoading(false);
+      setSearching(false);
     }
   }, []);
 
-  // --- LOGIC SEARCH ---
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (query.length >= 2) {
-        performSearch(query);
-      } else {
-        setResults(null);
-      }
-    }, 500);
+      if (query.trim().length >= 2) performSearch(query.trim());
+      else setResults(null);
+    }, 400);
     return () => clearTimeout(timer);
   }, [query, performSearch]);
 
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (searchRef.current && !searchRef.current.contains(event.target)) {
-        setShowResults(false);
-      }
-      if (notifRef.current && !notifRef.current.contains(event.target)) {
-        setShowNotif(false);
-      }
+    const onDown = (e) => {
+      if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false);
+      if (notifRef.current && !notifRef.current.contains(e.target)) setShowNotif(false);
+      if (userRef.current && !userRef.current.contains(e.target)) setShowUser(false);
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
   }, []);
 
-  const handleMenuClick = (menu) => {
-    setShowResults(false);
-    setQuery("");
-    setSelectedMenu(menu);
-  };
-
-  const handleOrderClick = (url) => {
-    setShowResults(false);
-    setQuery("");
-    window.location.href = url;
-  };
-
   const handleLogout = async () => {
-      try {
-        await fetch("/api/logout", { method: "POST" });
-        window.location.href = "/";
-      } catch (error) {
-        console.error("Logout error:", error);
-      }
-    };
-
-  // Fungsi pura-pura "Baca Notif" (Cuma di frontend sementara)
-  const markAllRead = () => {
-    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-  };
-
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const getNotifIcon = (type) => {
-    switch (type) {
-      case "warning":
-        return <AlertTriangle size={16} className="text-orange-500" />;
-      case "success":
-        return <CheckCircle size={16} className="text-green-500" />;
-      default:
-        return <Info size={16} className="text-blue-500" />;
+    try {
+      await fetch("/api/logout", { method: "POST" });
+    } finally {
+      window.location.href = "/";
     }
   };
 
+  const unread = notifications.filter((n) => !readIds.has(n.id));
+  const markAllRead = () => setReadIds(new Set(notifications.map((n) => n.id)));
+
   return (
     <>
-      <nav className="sticky top-0 right-0 left-0 z-[50] w-full h-16 bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 flex justify-between items-center transition-all duration-300">
-        {/* --- KIRI: BRAND --- */}
-        <div className="flex items-center gap-4">
-          <Link href="/dashboard" className="flex items-center gap-2 group cursor-pointer">
-            <div className="bg-blue-600 p-2 rounded-lg shadow-lg shadow-blue-200 group-hover:scale-105 transition-transform duration-300">
-              <Store size={20} className="text-white" strokeWidth={3} />
-            </div>
-            <div className="flex flex-col">
-              <span className="font-bold text-gray-800 text-lg leading-tight tracking-tight">
-                Warkop<span className="text-blue-600">AgamNusantara</span>
-              </span>
-              <span className="text-[10px] font-medium text-gray-400 uppercase tracking-widest">Admin Panel</span>
-            </div>
-          </Link>
-        </div>
+      <header className="sticky top-0 z-30 border-b border-gray-200 bg-white/85 backdrop-blur print:hidden">
+        <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8">
+          <button
+            onClick={onMenuClick}
+            aria-label="Buka menu"
+            className="-ml-1 rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
+          >
+            <MenuIcon className="h-5 w-5" />
+          </button>
 
-        {/* --- TENGAH: SEARCH BAR --- */}
-        <div className="hidden md:flex flex-1 max-w-md mx-8 relative" ref={searchRef}>
-          <div className="relative w-full group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {isLoading ? <Loader2 size={18} className="text-blue-500 animate-spin" /> : <Search size={18} className="text-gray-400 group-focus-within:text-blue-500 transition-colors" />}
+          <h2 className="hidden text-sm font-semibold text-gray-900 sm:block">{title}</h2>
+
+          {/* Pencarian */}
+          <div ref={searchRef} className="relative ml-auto w-full max-w-sm sm:ml-6 sm:flex-1">
+            <div className="relative">
+              <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-gray-400">
+                {searching ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              </span>
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => results && setShowResults(true)}
+                placeholder="Cari menu atau nama pelanggan…"
+                className="field rounded-xl border-transparent bg-gray-100 py-2 pl-9 pr-9 focus:bg-white"
+              />
+              {query && (
+                <button
+                  onClick={() => {
+                    setQuery("");
+                    setResults(null);
+                  }}
+                  aria-label="Hapus pencarian"
+                  className="absolute inset-y-0 right-2.5 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onFocus={() => {
-                if (results) setShowResults(true);
-              }}
-              className="block w-full pl-10 pr-10 py-2 border border-gray-200 rounded-xl leading-5 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-100 focus:border-blue-400 transition-all duration-200 sm:text-sm"
-              placeholder="Cari menu"
-            />
-            {query && (
-              <button
-                onClick={() => {
-                  setQuery("");
-                  setResults(null);
-                }}
-                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-              >
-                <X size={14} />
-              </button>
+
+            {showResults && results && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-96 overflow-y-auto rounded-2xl border border-gray-200 bg-white py-2 shadow-xl">
+                {!results.menus?.length && !results.orders?.length && (
+                  <p className="px-4 py-6 text-center text-sm text-gray-500">
+                    Tidak ada hasil untuk &quot;{query}&quot;
+                  </p>
+                )}
+                {results.menus?.length > 0 && (
+                  <div>
+                    <p className="eyebrow px-4 pb-1 pt-1">Menu</p>
+                    {results.menus.map((menu) => (
+                      <button
+                        key={menu.id}
+                        onClick={() => {
+                          setShowResults(false);
+                          setQuery("");
+                          setSelectedMenu(menu);
+                        }}
+                        className="flex w-full items-center gap-3 px-4 py-2 text-left hover:bg-gray-50"
+                      >
+                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-50 text-brand-700">
+                          <Utensils className="h-4 w-4" />
+                        </span>
+                        <span className="text-sm font-medium text-gray-800">{menu.nama}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {results.orders?.length > 0 && (
+                  <div className="mt-1">
+                    <p className="eyebrow px-4 pb-1 pt-2">Transaksi</p>
+                    {results.orders.map((order) => (
+                      <a
+                        key={order.id}
+                        href="/dashboard/history"
+                        className="flex items-center gap-3 px-4 py-2 hover:bg-gray-50"
+                      >
+                        <span className="grid h-8 w-8 place-items-center rounded-lg bg-sky-50 text-sky-700">
+                          <Receipt className="h-4 w-4" />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-medium text-gray-800">
+                            {order.customers?.name || "Guest"}
+                          </span>
+                          <span className="block text-xs text-gray-500">
+                            Order #{order.id} · {order.status}
+                          </span>
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
             )}
           </div>
 
-          {/* --- DROPDOWN SEARCH RESULT --- */}
-          {showResults && results && (
-            <div className="absolute top-full mt-2 w-full bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden max-h-96 overflow-y-auto z-[60]">
-              {results.menus?.length === 0 && results.orders?.length === 0 && <div className="p-4 text-center text-gray-500 text-sm">Tidak ditemukan hasil untuk &quot;{query}&quot; 😔</div>}
-              {results.menus?.length > 0 && (
-                <div className="py-2">
-                  <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Menu</h4>
-                  {results.menus.map((menu) => (
-                    <div key={menu.id} onClick={() => handleMenuClick(menu)} className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-3 transition-colors group">
-                      <div className="bg-orange-100 p-1.5 rounded-lg text-orange-600 group-hover:bg-orange-200 transition">
-                        <Utensils size={16} />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">{menu.nama}</p>
-                        <p className="text-xs text-gray-500">Klik untuk lihat detail</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {results.orders?.length > 0 && (
-                <div className="py-2">
-                  <h4 className="px-4 text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Transaksi</h4>
-                  {results.orders.map((order) => (
-                    <div key={order.id} onClick={() => handleOrderClick("/dashboard/history")} className="px-4 py-2 hover:bg-gray-50 cursor-pointer flex items-center gap-3 transition-colors">
-                      <div className="bg-blue-100 p-1.5 rounded-lg text-blue-600">
-                        <User size={16} />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800">{order.customers?.name || "Guest"}</p>
-                        <p className="text-xs text-gray-500">
-                          Order #{order.id} • {order.status}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-1 sm:gap-2">
+            {/* Notifikasi */}
+            <div ref={notifRef} className="relative">
+              <button
+                onClick={() => setShowNotif((v) => !v)}
+                aria-label="Notifikasi"
+                className={cn(
+                  "relative rounded-xl p-2.5 transition",
+                  showNotif ? "bg-brand-50 text-brand-700" : "text-gray-500 hover:bg-gray-100"
+                )}
+              >
+                <Bell className="h-5 w-5" />
+                {unread.length > 0 && (
+                  <span className="absolute right-1.5 top-1.5 grid h-4 min-w-4 place-items-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                    {unread.length > 9 ? "9+" : unread.length}
+                  </span>
+                )}
+              </button>
 
-        {/* --- KANAN: ACTIONS --- */}
-        <div className="flex items-center gap-3 sm:gap-5">
-          {/* --- NOTIFIKASI DROPDOWN (REAL TIME) --- */}
-          <div className="relative" ref={notifRef}>
-            <button onClick={() => setShowNotif(!showNotif)} className={`relative p-2 rounded-full transition-all duration-200 group ${showNotif ? "bg-blue-50 text-blue-600" : "text-gray-400 hover:text-blue-600 hover:bg-blue-50"}`}>
-              <Bell size={22} />
-              {unreadCount > 0 && (
-                <span className="absolute top-2 right-2 flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500"></span>
-                </span>
-              )}
-            </button>
-
-            {showNotif && (
-              <div className="absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[60] animate-in slide-in-from-top-2 duration-200">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                  <h3 className="font-bold text-gray-800">Notifikasi</h3>
-                  <div className="flex gap-2">
-                    <button onClick={fetchNotifications} className="text-xs text-gray-500 hover:text-blue-600" disabled={isFetchingNotif}>
-                      {isFetchingNotif ? "Loading..." : "Refresh"}
-                    </button>
-                    {unreadCount > 0 && (
-                      <button onClick={markAllRead} className="text-xs text-blue-600 hover:text-blue-700 font-medium">
-                        Baca Semua
+              {showNotif && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-80 max-w-[90vw] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl animate-fade-in">
+                  <div className="flex items-center justify-between border-b border-gray-100 px-4 py-3">
+                    <h3 className="text-sm font-semibold text-gray-900">Notifikasi</h3>
+                    {unread.length > 0 && (
+                      <button onClick={markAllRead} className="text-xs font-medium text-brand-700 hover:underline">
+                        Tandai dibaca
                       </button>
                     )}
                   </div>
-                </div>
-                <div className="max-h-80 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400 text-sm">Belum ada notifikasi baru, santuy aja bang! 😎</div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div key={notif.id} className={`p-4 border-b border-gray-50 hover:bg-gray-50 transition-colors flex gap-3 ${!notif.read ? "bg-blue-50/30" : ""}`}>
-                        <div
-                          className={`mt-1 p-1.5 rounded-full h-fit shrink-0 
-                          ${notif.type === "warning" ? "bg-orange-100" : notif.type === "success" ? "bg-green-100" : "bg-blue-100"}
-                        `}
-                        >
-                          {getNotifIcon(notif.type)}
-                        </div>
-                        <div>
-                          <p className={`text-sm ${!notif.read ? "font-bold text-gray-900" : "font-medium text-gray-700"}`}>{notif.title}</p>
-                          <p className="text-xs text-gray-500 mt-0.5 leading-relaxed">{notif.message}</p>
-                          <p className="text-[10px] text-gray-400 mt-2 font-medium">{notif.time}</p>
-                        </div>
-                        {!notif.read && <div className="w-2 h-2 rounded-full bg-blue-500 shrink-0 mt-2"></div>}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-          {/* --------------------------- */}
-
-          <div className="h-8 w-px bg-gray-200 hidden sm:block"></div>
-
-          <div className="flex items-center gap-3 sm:gap-5">
-
-          {/* --- USER PROFILE --- */}
-          <div className="flex items-center gap-3 cursor-pointer p-1.5 pr-3 rounded-full hover:bg-gray-50 border border-transparent hover:border-gray-100 transition-all group">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-blue-600 flex items-center justify-center text-white shadow-md">
-              <User size={18} />
-            </div>
-            <div className="hidden sm:flex flex-col items-start">
-              <span className="text-sm font-semibold text-gray-700 leading-none">Admin</span>
-            </div>
-            <div className="relative">
-              <ChevronDown size={16} className="text-gray-400 hidden sm:block" />
-              
-              {/* Dropdown Profile */}
-              <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[60]">
-                <div className="py-2">
-    
-                  <button 
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors border-t border-gray-100"
-                  >
-                    <LogOut size={16} />
-                    Logout
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        </div>
-      </nav>
-
-      {/* --- MODAL DETAIL MENU --- */}
-      {selectedMenu && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden scale-100 animate-in zoom-in-95 duration-200">
-            <div className="relative h-48 bg-gray-200">
-              {selectedMenu.gambar ? (
-                <img src={selectedMenu.gambar} alt={selectedMenu.nama} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-gray-400">
-                  <Utensils size={48} />
-                </div>
-              )}
-              <button onClick={() => setSelectedMenu(null)} className="absolute top-3 right-3 p-2 bg-white/50 hover:bg-white rounded-full text-gray-800 transition-colors backdrop-blur-md">
-                <X size={20} />
-              </button>
-            </div>
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <div>
-                  <h3 className="text-xl font-bold text-gray-900">{selectedMenu.nama}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-md flex items-center gap-1">
-                      <Tag size={12} />
-                      {selectedMenu.kategori}
-                    </span>
+                  <div className="max-h-80 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="px-4 py-8 text-center text-sm text-gray-400">Belum ada notifikasi.</p>
+                    ) : (
+                      notifications.map((n) => {
+                        const isRead = readIds.has(n.id);
+                        return (
+                          <div
+                            key={n.id}
+                            className={cn(
+                              "flex gap-3 border-b border-gray-50 px-4 py-3 last:border-0",
+                              !isRead && "bg-brand-50/40"
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                "mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full",
+                                n.type === "warning" ? "bg-amber-100 text-amber-700" : "bg-sky-100 text-sky-700"
+                              )}
+                            >
+                              {n.type === "warning" ? <AlertTriangle className="h-4 w-4" /> : n.title === "Pesanan Masuk" ? <BellRing className="h-4 w-4" /> : <Info className="h-4 w-4" />}
+                            </span>
+                            <div className="min-w-0">
+                              <p className={cn("text-sm", isRead ? "text-gray-700" : "font-semibold text-gray-900")}>
+                                {n.title}
+                              </p>
+                              <p className="mt-0.5 text-xs leading-relaxed text-gray-500">{n.message}</p>
+                              <p className="mt-1 text-[11px] text-gray-400">{n.time}</p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
                   </div>
                 </div>
-                <div className="text-right">
-                  <p className="text-lg font-bold text-blue-600">Rp {selectedMenu.harga.toLocaleString("id-ID")}</p>
-                </div>
-              </div>
-              <button onClick={() => setSelectedMenu(null)} className="w-full py-2.5 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-xl transition-colors">
-                Tutup Detail
+              )}
+            </div>
+
+            {/* Akun */}
+            <div ref={userRef} className="relative">
+              <button
+                onClick={() => setShowUser((v) => !v)}
+                className="flex items-center gap-2 rounded-xl p-1.5 pr-2 transition hover:bg-gray-100"
+              >
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand-600 text-sm font-semibold text-white">
+                  A
+                </span>
+                <span className="hidden text-sm font-medium text-gray-700 sm:block">Admin</span>
+                <ChevronDown className="hidden h-4 w-4 text-gray-400 sm:block" />
               </button>
+              {showUser && (
+                <div className="absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-xl animate-fade-in">
+                  <button
+                    onClick={handleLogout}
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-rose-600 hover:bg-rose-50"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Keluar
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {selectedMenu && (
+        <div
+          className="fixed inset-0 z-[60] grid place-items-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in"
+          onClick={() => setSelectedMenu(null)}
+        >
+          <div
+            className="w-full max-w-sm overflow-hidden rounded-2xl bg-white shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-label={selectedMenu.nama}
+          >
+            <div className="relative h-48 bg-gray-100">
+              {selectedMenu.gambar && (
+                <Image src={selectedMenu.gambar} alt={selectedMenu.nama} fill unoptimized className="object-cover" />
+              )}
+              <button
+                onClick={() => setSelectedMenu(null)}
+                aria-label="Tutup"
+                className="absolute right-3 top-3 rounded-full bg-white/90 p-1.5 text-gray-700 shadow hover:bg-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <div className="p-5">
+              <p className="eyebrow">{CATEGORY_LABEL[selectedMenu.kategori] || selectedMenu.kategori}</p>
+              <h3 className="mt-1 text-lg font-semibold text-gray-900">{selectedMenu.nama}</h3>
+              <p className="mt-1 text-xl font-semibold text-brand-700">{formatRupiah(selectedMenu.harga)}</p>
+              <a href="/dashboard/menu" className="btn-primary mt-4 w-full">
+                Kelola di halaman Menu
+              </a>
             </div>
           </div>
         </div>

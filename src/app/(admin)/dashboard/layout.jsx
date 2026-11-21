@@ -1,39 +1,31 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
 
-// Urutan penting: route yang lebih spesifik dicek lebih dulu.
-const TAB_BY_PREFIX = [
-  ["/dashboard/kombo_menu", "kombo_menu"],
-  ["/dashboard/menu", "menu"],
-  ["/dashboard/table", "tables"],
-  ["/dashboard/history", "history"],
-];
-
-function tabFromPath(pathname) {
-  const match = TAB_BY_PREFIX.find(([prefix]) => pathname.startsWith(prefix));
-  return match ? match[1] : "dashboard";
-}
-
 export default function DashboardLayout({ children }) {
-  // Tab aktif diturunkan dari URL, jadi tetap benar saat reload / tombol back.
-  const activeTab = tabFromPath(usePathname());
+  const pathname = usePathname();
+  const [drawerPath, setDrawerPath] = useState(null);
+
+  // Drawer mobile terbuka hanya untuk path tempat ia dibuka -> otomatis tertutup saat pindah halaman.
+  const drawerOpen = drawerPath === pathname;
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const onKey = (e) => e.key === "Escape" && setDrawerPath(null);
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [drawerOpen]);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="sticky top-0 z-50">
-        <Navbar />
-      </div>
+      <Sidebar open={drawerOpen} onClose={() => setDrawerPath(null)} />
 
-      <div className="flex">
-        <Sidebar activeTab={activeTab} />
-
-        {/* ml-64 = lebar Sidebar (w-64, fixed) */}
-        <div className="flex-1 ml-64">
-          <main className="p-2">{children}</main>
-        </div>
+      <div className="lg:pl-64 print:pl-0">
+        <Navbar onMenuClick={() => setDrawerPath(pathname)} />
+        <main className="mx-auto w-full max-w-[1400px] px-4 py-6 sm:px-6 lg:px-8 lg:py-8">{children}</main>
       </div>
     </div>
   );

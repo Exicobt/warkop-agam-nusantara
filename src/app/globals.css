@@ -1,186 +1,239 @@
 /* =======================================================
-   0. Import Font (HARUS paling atas sebelum semua aturan)
+   Warkop Agam Nusantara — design tokens
+   Catatan: di Tailwind v4, `@import "tailwindcss"` harus
+   berada di paling atas, sebelum @plugin / @theme.
    ======================================================= */
-@import url("https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap");
-
-/* =======================================================
-   1. Konfigurasi Khusus PostCSS/Tailwind
-   ======================================================= */
+@import "tailwindcss";
 @plugin "tailwindcss-animate";
 
 @custom-variant dark (&:is(.dark *));
 
+/* ---------- Palet: kopi (brand) + batu hangat (netral) ---------- */
+@theme {
+  /* Brand: tembaga / karamel */
+  --color-brand-50: #fdf6ee;
+  --color-brand-100: #fae9d3;
+  --color-brand-200: #f4d0a6;
+  --color-brand-300: #ecb06f;
+  --color-brand-400: #e48c3d;
+  --color-brand-500: #d9711c;
+  --color-brand-600: #c05a14;
+  --color-brand-700: #9f4513;
+  --color-brand-800: #823917;
+  --color-brand-900: #6a3016;
+  --color-brand-950: #3a1708;
+
+  /* Espresso: dipakai sidebar & elemen gelap */
+  --color-espresso-700: #3a2c24;
+  --color-espresso-800: #2a1f19;
+  --color-espresso-900: #1e1612;
+  --color-espresso-950: #140e0b;
+
+  /* Netral hangat: menggantikan gray/slate/zinc bawaan Tailwind
+     sehingga seluruh halaman otomatis ikut nuansa hangat. */
+  --color-gray-50: #faf8f5;
+  --color-gray-100: #f4f1ec;
+  --color-gray-200: #e9e4dc;
+  --color-gray-300: #d6cfc4;
+  --color-gray-400: #a8a094;
+  --color-gray-500: #7c7469;
+  --color-gray-600: #5c554c;
+  --color-gray-700: #433d36;
+  --color-gray-800: #2c2723;
+  --color-gray-900: #1c1815;
+  --color-gray-950: #100d0b;
+  --color-slate-50: #faf8f5;
+  --color-slate-100: #f4f1ec;
+  --color-slate-200: #e9e4dc;
+  --color-slate-300: #d6cfc4;
+  --color-slate-400: #a8a094;
+  --color-slate-500: #7c7469;
+  --color-slate-600: #5c554c;
+  --color-slate-700: #433d36;
+  --color-slate-800: #2c2723;
+  --color-slate-900: #1c1815;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --animate-fade-in: fade-in 0.25s ease-out both;
+  --animate-rise: rise 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}
+
+/* ---------- Token semantik (kompatibel dengan komponen shadcn) ---------- */
 @theme inline {
-   --color-background: var(--background);
-   --color-foreground: var(--foreground);
-   --font-sans: var(--font-geist-sans);
-   --font-mono: var(--font-geist-mono);
-   --color-sidebar-ring: var(--sidebar-ring);
-   --color-sidebar-border: var(--sidebar-border);
-   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-   --color-sidebar-accent: var(--sidebar-accent);
-   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-   --color-sidebar-primary: var(--sidebar-primary);
-   --color-sidebar-foreground: var(--sidebar-foreground);
-   --color-sidebar: var(--sidebar);
-   --color-chart-5: var(--chart-5);
-   --color-chart-4: var(--chart-4);
-   --color-chart-3: var(--chart-3);
-   --color-chart-2: var(--chart-2);
-   --color-chart-1: var(--chart-1);
-   --color-ring: var(--ring);
-   --color-input: var(--input);
-   --color-border: var(--border);
-   --color-destructive-foreground: var(--destructive-foreground);
-   --color-destructive: var(--destructive);
-   --color-accent-foreground: var(--accent-foreground);
-   --color-accent: var(--accent);
-   --color-muted-foreground: var(--muted-foreground);
-   --color-muted: var(--muted);
-   --color-secondary-foreground: var(--secondary-foreground);
-   --color-secondary: var(--secondary);
-   --color-primary-foreground: var(--primary-foreground);
-   --color-primary: var(--primary);
-   --color-popover-foreground: var(--popover-foreground);
-   --color-popover: var(--popover);
-   --color-card-foreground: var(--card-foreground);
-   --color-card: var(--card);
-   --color-highlight: var(--highlight);
-   --radius-sm: calc(var(--radius) - 4px);
-   --radius-md: calc(var(--radius) - 2px);
-   --radius-lg: var(--radius);
-   --radius-xl: calc(var(--radius) + 4px);
-   --shadow-top: var(--shadow-top);
-   --font-poppins: var(--poppins);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-highlight: var(--highlight);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --shadow-top: var(--shadow-top);
 }
 
-
-/* =======================================================
-   2. Tailwind Import
-   ======================================================= */
-@import "tailwindcss";
-
-
-/* =======================================================
-   3. Aturan CSS Murni dan Variabel (Theme Light)
-   ======================================================= */
 :root {
-   --background: oklch(94.91% 0 0);
-   --foreground: oklch(0.147 0.004 49.25);
-   --card: oklch(1 0 0);
-   --card-foreground: oklch(0.147 0.004 49.25);
-   --popover: oklch(1 0 0);
-   --popover-foreground: oklch(0.147 0.004 49.25);
-   --primary: oklch(0.216 0.006 56.043);
-   --primary-foreground: oklch(0.985 0.001 106.423);
-   --secondary: oklch(0.97 0.001 106.424);
-   --secondary-foreground: oklch(0.216 0.006 56.043);
-   --muted: oklch(0.97 0.001 106.424);
-   --muted-foreground: oklch(0.553 0.013 58.071);
-   --accent: oklch(0.97 0.001 106.424);
-   --accent-foreground: oklch(0.216 0.006 56.043);
-   --destructive: oklch(0.577 0.245 27.325);
-   --destructive-foreground: oklch(0.577 0.245 27.325);
-   --border: oklch(0.923 0.003 48.717);
-   --input: oklch(0.923 0.003 48.717);
-   --ring: oklch(0.709 0.01 56.259);
-   --chart-1: oklch(0.646 0.222 41.116);
-   --chart-2: oklch(0.6 0.118 184.704);
-   --chart-3: oklch(0.398 0.07 227.392);
-   --chart-4: oklch(0.828 0.189 84.429);
-   --chart-5: oklch(0.769 0.188 70.08);
-   --radius: 0.625rem;
-   --sidebar: oklch(0.985 0.001 106.423);
-   --sidebar-foreground: oklch(0.147 0.004 49.25);
-   --sidebar-primary: oklch(0.216 0.006 56.043);
-   --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-   --sidebar-accent: oklch(0.97 0.001 106.424);
-   --sidebar-accent-foreground: oklch(0.216 0.006 56.043);
-   --sidebar-border: oklch(0.923 0.003 48.717);
-   --sidebar-ring: oklch(0.709 0.01 56.259);
-   --highlight: oklch(50% 0.2 200);
-   --shadow-top: 0px -4px 14px -2px rgba(0, 0, 0, 0.13);
-   --poppins: "Poppins", sans-serif;
+  --background: #faf8f5;
+  --foreground: #1c1815;
+  --card: #ffffff;
+  --card-foreground: #1c1815;
+  --popover: #ffffff;
+  --popover-foreground: #1c1815;
+  --primary: #c05a14;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f1ec;
+  --secondary-foreground: #2c2723;
+  --muted: #f4f1ec;
+  --muted-foreground: #7c7469;
+  --accent: #fae9d3;
+  --accent-foreground: #6a3016;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #e9e4dc;
+  --input: #e9e4dc;
+  --ring: #e48c3d;
+  --chart-1: #c05a14;
+  --chart-2: #3f8f6b;
+  --chart-3: #3b6ea5;
+  --chart-4: #d9a21c;
+  --chart-5: #8a5a9e;
+  --radius: 0.75rem;
+  --sidebar: #1e1612;
+  --sidebar-foreground: #e9e1d8;
+  --sidebar-primary: #e48c3d;
+  --sidebar-primary-foreground: #1e1612;
+  --sidebar-accent: #2a1f19;
+  --sidebar-accent-foreground: #fdf6ee;
+  --sidebar-border: #3a2c24;
+  --sidebar-ring: #e48c3d;
+  --highlight: #c05a14;
+  --shadow-top: 0 -4px 14px -2px rgba(30, 22, 18, 0.1);
 }
 
-/* 4. Aturan CSS Murni dan Variabel (Theme Dark) */
 .dark {
-   --background: oklch(0.147 0.004 49.25);
-   --foreground: oklch(0.985 0.001 106.423);
-   --card: oklch(0.147 0.004 49.25);
-   --card-foreground: oklch(0.985 0.001 106.423);
-   --popover: oklch(0.147 0.004 49.25);
-   --popover-foreground: oklch(0.985 0.001 106.423);
-   --primary: oklch(0.985 0.001 106.423);
-   --primary-foreground: oklch(0.216 0.006 56.043);
-   --secondary: oklch(0.268 0.007 34.298);
-   --secondary-foreground: oklch(0.985 0.001 106.423);
-   --muted: oklch(0.268 0.007 34.298);
-   --muted-foreground: oklch(0.709 0.01 56.259);
-   --accent: oklch(0.268 0.007 34.298);
-   --accent-foreground: oklch(0.985 0.001 106.423);
-   --destructive: oklch(0.396 0.141 25.723);
-   --destructive-foreground: oklch(0.637 0.237 25.331);
-   --border: oklch(0.268 0.007 34.298);
-   --input: oklch(0.268 0.007 34.298);
-   --ring: oklch(0.553 0.013 58.071);
-   --chart-1: oklch(0.488 0.243 264.376);
-   --chart-2: oklch(0.696 0.17 162.48);
-   --chart-3: oklch(0.769 0.188 70.08);
-   --chart-4: oklch(0.627 0.265 303.9);
-   --chart-5: oklch(0.645 0.246 16.439);
-   --sidebar: oklch(0.216 0.006 56.043);
-   --sidebar-foreground: oklch(0.985 0.001 106.423);
-   --sidebar-primary: oklch(0.488 0.243 264.376);
-   --sidebar-primary-foreground: oklch(0.985 0.001 106.423);
-   --sidebar-accent: oklch(0.268 0.007 34.298);
-   --sidebar-accent-foreground: oklch(0.985 0.001 106.423);
-   --sidebar-border: oklch(0.268 0.007 34.298);
-   --sidebar-ring: oklch(0.553 0.013 58.071);
+  --background: #140e0b;
+  --foreground: #faf8f5;
+  --card: #1e1612;
+  --card-foreground: #faf8f5;
+  --popover: #1e1612;
+  --popover-foreground: #faf8f5;
+  --primary: #e48c3d;
+  --primary-foreground: #1e1612;
+  --secondary: #2a1f19;
+  --secondary-foreground: #faf8f5;
+  --muted: #2a1f19;
+  --muted-foreground: #a8a094;
+  --accent: #3a2c24;
+  --accent-foreground: #faf8f5;
+  --destructive: #ef4444;
+  --destructive-foreground: #faf8f5;
+  --border: #3a2c24;
+  --input: #3a2c24;
+  --ring: #e48c3d;
 }
 
-/* 5. Aturan Tailwind Layer */
 @layer base {
-   * {
-      @apply border-border outline-ring/50;
-   }
-   body {
-      @apply bg-background text-foreground;
-   }
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    text-rendering: optimizeLegibility;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
 }
 
-
-/* 6. Aturan CSS Murni Lainnya (seperti scrollbar dan animasi) */
-/* Style untuk scrollbar di WebKit-based browser (Chrome, Edge, Safari) */
-::-webkit-scrollbar {
-   width: 4px; /* Lebar scrollbar */
-   height: 8px; /* Tinggi scrollbar untuk scroll horizontal */
+  /* Kartu standar: tipis, bersih, tanpa bayangan tebal */
+@utility surface {
+  @apply rounded-2xl border border-gray-200 bg-white shadow-[0_1px_2px_rgba(28,24,21,0.04)];
+}
+@utility field {
+  @apply w-full rounded-xl border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 transition focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700;
+}
+@utility btn-soft {
+  @apply btn border border-gray-200 bg-white text-gray-700 hover:bg-gray-50;
+}
+@utility btn-danger {
+  @apply btn bg-rose-600 text-white hover:bg-rose-700;
+}
+@utility eyebrow {
+  @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-gray-400;
 }
 
-::-webkit-scrollbar-track {
-   background: #f1f1f1; /* Warna background track */
-   border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb {
-   background: var(--highlight); /* Warna thumb (bagian yang bisa digeser) */
-   border-radius: 5px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-   background: #555; /* Warna thumb saat hover */
-}
+/* Scrollbar tipis & netral */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #d6cfc4; border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: #a8a094; }
 
 .loader {
-   width: 50px;
-   aspect-ratio: 1;
-   border-radius: 50%;
-   border: 8px solid;
-   border-color: var(--highlight) #0000;
-   animation: l1 1s infinite;
+  width: 44px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  border: 6px solid;
+  border-color: var(--highlight) #0000;
+  animation: l1 1s infinite;
 }
-@keyframes l1 {
-   to {
-      transform: rotate(.5turn)
-   }
+@keyframes l1 { to { transform: rotate(.5turn) } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

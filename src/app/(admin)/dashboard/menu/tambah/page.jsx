@@ -162,7 +162,7 @@ const TambahMenu = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
         <div className="flex-1 p-6">
           <div className="max-w-4xl mx-auto">
@@ -207,7 +207,7 @@ const TambahMenu = () => {
                         onChange={handleChange}
                         type="text"
                         placeholder="Masukkan nama makanan"
-                        className={`w-full bg-white border px-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        className={`w-full bg-white border px-4 py-2 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
                           errors.nama ? "border-red-300" : "border-gray-300"
                         }`}
                       />
@@ -238,7 +238,7 @@ const TambahMenu = () => {
                           type="number"
                           placeholder="0"
                           min="0"
-                          className={`w-full bg-white border pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                          className={`w-full bg-white border pl-10 pr-4 py-2 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
                             errors.harga ? "border-red-300" : "border-gray-300"
                           }`}
                         />
@@ -263,7 +263,7 @@ const TambahMenu = () => {
                         name="kategori"
                         value={formData.kategori}
                         onChange={handleChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
                           errors.kategori ? "border-red-300" : "border-gray-300"
                         }`}
                       >
@@ -366,7 +366,7 @@ const TambahMenu = () => {
                   <button
                     type="submit"
                     disabled={updating}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
+                    className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
                   >
                     {updating && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

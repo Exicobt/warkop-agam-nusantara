@@ -1,239 +1,298 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-// KITA GANTI IMPORT KE 'lucide-react' BIAR PASTI JALAN
-import { ArrowLeft, Printer, Trash, Receipt } from "lucide-react";
-import toast from "react-hot-toast";
-import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Download, Loader2, Receipt, Search, X } from "lucide-react";
+import DateRange, { initialRange, resolveRange } from "@/components/dashboard/DateRange";
+import { EmptyState, PageHeader, StatusBadge } from "@/components/dashboard/ui";
+import {
+  STATUS_META,
+  dateKey,
+  downloadCsv,
+  formatDateTime,
+  formatNumber,
+  formatRupiah,
+  formatTime,
+  statusMeta,
+  tableLabel,
+} from "@/lib/format";
+import { cn } from "@/lib/utils";
 
-const AdminHistoryPage = () => {
-  const [history, setHistory] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [expandedRows, setExpandedRows] = useState(new Set());
-  const [filterStatus, setFilterStatus] = useState("all");
+const PAGE_SIZE = 15;
+const FILTERS = ["all", "pending", "waiting", "preparing", "done", "finish", "cancelled"];
 
-  const fetchHistory = useCallback(async () => {
-    setIsLoading(true);
+export default function HistoryPage() {
+  const [range, setRange] = useState(() => initialRange("30d"));
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [status, setStatus] = useState("all");
+  const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [detail, setDetail] = useState(null);
+
+  const { from, to } = useMemo(() => resolveRange(range), [range]);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    setError(null);
     try {
-      const response = await fetch("/api/history");
-      if (!response.ok) {
-        throw new Error("Gagal mengambil data history");
-      }
-      const data = await response.json();
-      setHistory(Array.isArray(data) ? data : []);
-    } catch (error) {
-      console.error("Error:", error);
-      toast.error(error.message);
+      const qs = new URLSearchParams({ status: "all", from: from.toISOString(), to: to.toISOString() });
+      const res = await fetch(`/api/orders?${qs}`);
+      if (!res.ok) throw new Error(res.status === 401 ? "Sesi berakhir, silakan login ulang." : "Gagal memuat riwayat.");
+      const data = await res.json();
+      setOrders(Array.isArray(data) ? data : []);
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
-  }, []);
+  }, [from, to]);
 
   useEffect(() => {
-    fetchHistory();
-  }, [fetchHistory]);
+    load();
+  }, [load]);
 
-  const toggleRow = (id) => {
-    setExpandedRows((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
-      } else {
-        newSet.add(id);
-      }
-      return newSet;
+  const counts = useMemo(() => {
+    const c = { all: orders.length };
+    for (const o of orders) c[o.status] = (c[o.status] || 0) + 1;
+    return c;
+  }, [orders]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase().replace(/^#/, "");
+    return orders.filter((o) => {
+      if (status !== "all" && o.status !== status) return false;
+      if (!q) return true;
+      return (
+        String(o.id) === q ||
+        (o.customers?.name || "").toLowerCase().includes(q) ||
+        tableLabel(o).toLowerCase().includes(q) ||
+        (o.orders || []).some((i) => (i.menu?.nama || "").toLowerCase().includes(q))
+      );
     });
-  };
+  }, [orders, status, search]);
 
-  const formatDate = (date) => {
-    return new Date(date).toLocaleString("id-ID", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-    });
-  };
+  const pages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pages);
+  const rows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const filteredRevenue = filtered.filter((o) => o.status === "finish").reduce((s, o) => s + (o.total || 0), 0);
 
-  const getStatusBadge = (status) => {
-    const statusConfig = {
-      waiting: {
-        bg: "bg-yellow-100",
-        text: "text-yellow-800",
-        label: "Menunggu",
-      },
-      preparing: {
-        bg: "bg-blue-100",
-        text: "text-blue-800",
-        label: "Disiapkan",
-      },
-      done: {
-        bg: "bg-green-100",
-        text: "text-green-800",
-        label: "Selesai",
-      },
-      cancelled: {
-        bg: "bg-red-100",
-        text: "text-red-800",
-        label: "Dibatalkan",
-      },
-    };
-
-    const config = statusConfig[status] || { bg: "bg-gray-100", text: "text-gray-800", label: status };
-    return <span className={`px-3 py-1 rounded-full text-sm font-medium ${config.bg} ${config.text}`}>{config.label}</span>;
-  };
-
-  const filteredHistory = history.filter((item) => {
-    if (filterStatus === "all") return true;
-    return item.status === filterStatus;
-  });
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          <div className="mb-6 animate-pulse">
-            <div className="h-12 w-40 bg-gray-200 rounded"></div>
-          </div>
-          <div className="space-y-4 animate-pulse">
-            <div className="h-20 w-full bg-gray-200 rounded"></div>
-            <div className="h-20 w-full bg-gray-200 rounded"></div>
-            <div className="h-20 w-full bg-gray-200 rounded"></div>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const exportCsv = () =>
+    downloadCsv(`riwayat-transaksi_${dateKey(from)}_${dateKey(to)}.csv`, [
+      ["No. Order", "Tanggal", "Jam", "Pelanggan", "Meja / Tipe", "Status", "Metode bayar", "Item", "Total (Rp)"],
+      ...filtered.map((o) => [
+        o.id,
+        dateKey(o.create_at),
+        formatTime(o.create_at),
+        o.customers?.name || "Guest",
+        tableLabel(o),
+        statusMeta(o.status).label,
+        o.payment_method?.name || "-",
+        (o.orders || []).map((i) => `${i.menu?.nama || "Menu dihapus"} x${i.qty}`).join("; "),
+        o.total,
+      ]),
+    ]);
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-      <div className="max-w-6xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link href="/dashboard">
-              <button className="p-2 hover:bg-gray-200 rounded-full transition group">
-                <ArrowLeft size={24} className="text-gray-700 group-hover:-translate-x-1 transition-transform" />
-              </button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-2">
-                <Receipt size={32} className="text-blue-600" />
-                Admin History
-              </h1>
-              <p className="text-gray-500 text-sm">Pantau semua jejak transaksi di sini.</p>
-            </div>
-          </div>
-          <button onClick={fetchHistory} className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition shadow-lg shadow-blue-200">
-            Refresh Data
+    <div className="space-y-6">
+      <PageHeader
+        title="Riwayat Transaksi"
+        description="Telusuri seluruh pesanan, cari berdasarkan nama, nomor order, meja, atau menu."
+        actions={
+          <button onClick={exportCsv} disabled={!filtered.length} className="btn-soft py-2">
+            <Download className="h-4 w-4" />
+            Ekspor CSV
           </button>
-        </div>
+        }
+      />
 
-        {/* Filter */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
-          {["all", "waiting", "preparing", "done", "cancelled"].map((status) => (
-            <button
-              key={status}
-              onClick={() => setFilterStatus(status)}
-              className={`px-4 py-2 rounded-lg font-medium transition capitalize whitespace-nowrap ${filterStatus === status ? "bg-slate-800 text-white shadow-md" : "bg-white text-gray-600 hover:bg-gray-100 border border-gray-200"}`}
-            >
-              {status === "all" ? "Semua" : status}
-            </button>
-          ))}
-        </div>
+      <DateRange
+        value={range}
+        onChange={(v) => {
+          setRange(v);
+          setPage(1);
+        }}
+      />
 
-        {/* Content */}
-        {filteredHistory.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center flex flex-col items-center justify-center">
-            <div className="bg-gray-50 p-4 rounded-full mb-4">
-              <Receipt size={48} className="text-gray-300" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-900">Belum Ada Data</h3>
-            <p className="text-gray-500">Sepertinya restoran lagi sepi atau filtermu terlalu spesifik.</p>
+      <div className="surface overflow-hidden">
+        {/* Toolbar */}
+        <div className="space-y-3 border-b border-gray-100 p-4">
+          <div className="relative max-w-md">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+            <input
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              placeholder="Cari #order, pelanggan, meja, menu…"
+              className="field pl-9"
+            />
           </div>
+          <div className="flex flex-wrap gap-2">
+            {FILTERS.map((f) => (
+              <button
+                key={f}
+                onClick={() => {
+                  setStatus(f);
+                  setPage(1);
+                }}
+                className={cn(
+                  "rounded-full px-3 py-1.5 text-xs font-medium ring-1 ring-inset transition",
+                  status === f
+                    ? "bg-gray-900 text-white ring-gray-900"
+                    : "bg-white text-gray-600 ring-gray-200 hover:bg-gray-50"
+                )}
+              >
+                {f === "all" ? "Semua" : STATUS_META[f].label}
+                <span className={cn("ml-1.5 tabular-nums", status === f ? "text-gray-300" : "text-gray-400")}>
+                  {counts[f] || 0}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && <p className="border-b border-rose-100 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</p>}
+
+        {loading ? (
+          <div className="grid place-items-center py-20 text-gray-400">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : rows.length === 0 ? (
+          <EmptyState icon={Receipt} title="Tidak ada transaksi" description="Ubah filter, kata kunci, atau rentang tanggal." />
         ) : (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead className="bg-slate-50 border-b">
-                  <tr>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">No. Order</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Pelanggan</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Meja</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Tipe</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Status</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-right">Total</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500">Waktu</th>
-                    <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-gray-500 text-center">Aksi</th>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[720px] text-sm">
+              <thead>
+                <tr className="bg-gray-50/70 text-left text-[11px] uppercase tracking-wider text-gray-400">
+                  <th className="px-5 py-3 font-medium">Order</th>
+                  <th className="px-3 py-3 font-medium">Pelanggan</th>
+                  <th className="px-3 py-3 font-medium">Item</th>
+                  <th className="px-3 py-3 font-medium">Status</th>
+                  <th className="px-5 py-3 text-right font-medium">Total</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {rows.map((o) => (
+                  <tr key={o.id} onClick={() => setDetail(o)} className="cursor-pointer hover:bg-gray-50/70">
+                    <td className="px-5 py-3.5">
+                      <p className="font-semibold text-gray-900">#{o.id}</p>
+                      <p className="text-xs text-gray-400">{formatDateTime(o.create_at)}</p>
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <p className="text-gray-800">{o.customers?.name || "Guest"}</p>
+                      <p className="text-xs text-gray-400">{tableLabel(o)}</p>
+                    </td>
+                    <td className="max-w-[260px] px-3 py-3.5">
+                      <p className="truncate text-gray-600">
+                        {(o.orders || []).map((i) => `${i.qty}× ${i.menu?.nama || "Item dihapus"}`).join(", ")}
+                      </p>
+                    </td>
+                    <td className="px-3 py-3.5">
+                      <StatusBadge status={o.status} />
+                    </td>
+                    <td className="px-5 py-3.5 text-right font-semibold tabular-nums text-gray-900">
+                      {formatRupiah(o.total)}
+                    </td>
                   </tr>
-                </thead>
-
-                {filteredHistory.map((order) => (
-                  <tbody key={order.id} className="border-b last:border-0 hover:bg-slate-50/50 transition duration-150">
-                    <tr>
-                      <td className="px-6 py-4 text-sm font-medium text-gray-900">#{order.id}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700 whitespace-nowrap font-medium">{order.customer_name || "Guest"}</td>
-                      <td className="px-6 py-4 text-sm text-gray-700">
-                        <span className="bg-gray-100 px-2 py-1 rounded text-xs font-semibold">{order.table_number}</span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-gray-700">{order.order_type}</td>
-                      <td className="px-6 py-4 text-sm">{getStatusBadge(order.status)}</td>
-                      <td className="px-6 py-4 text-sm font-bold text-gray-900 text-right">Rp {order.total_price.toLocaleString("id-ID")}</td>
-                      <td className="px-6 py-4 text-xs text-gray-500">{formatDate(order.created_at)}</td>
-                      <td className="px-6 py-4 text-center">
-                        <div className="flex gap-2 justify-center items-center">
-                          <button onClick={() => toggleRow(order.id)} className="text-blue-600 hover:text-blue-800 font-medium text-sm hover:underline">
-                            {expandedRows.has(order.id) ? "Tutup" : "Detail"}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {/* Detail Row */}
-                    {expandedRows.has(order.id) && (
-                      <tr className="bg-slate-50/80 shadow-inner">
-                        <td colSpan="8" className="px-6 py-4">
-                          <div className="bg-white p-4 rounded-xl border border-gray-200 max-w-3xl ml-10 shadow-sm">
-                            <h4 className="font-bold text-gray-800 mb-3 flex items-center gap-2 text-sm uppercase tracking-wide">🧾 Rincian Pesanan #{order.id}</h4>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                              <div className="space-y-2">
-                                {order.items.map((item, idx) => (
-                                  <div key={idx} className="flex justify-between items-center text-sm border-b border-dashed border-gray-100 pb-2 last:border-0">
-                                    <div className="flex flex-col">
-                                      <span className="font-medium text-gray-800">{item.menu_name}</span>
-                                      <span className="text-xs text-gray-500">
-                                        {item.qty} x Rp {item.price.toLocaleString("id-ID")}
-                                      </span>
-                                    </div>
-                                    <span className="font-semibold text-gray-900">Rp {item.total.toLocaleString("id-ID")}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              <div className="bg-gray-50 p-4 rounded-lg h-fit">
-                                <div className="flex justify-between text-sm mb-1">
-                                  <span className="text-gray-500">Subtotal</span>
-                                  <span className="font-medium">Rp {order.total_price.toLocaleString("id-ID")}</span>
-                                </div>
-                                <div className="flex justify-between text-sm mb-2">
-                                  <span className="text-gray-500">Status Bayar</span>
-                                  <span className="font-medium text-green-600">Lunas</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
                 ))}
-              </table>
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Footer */}
+        {!loading && filtered.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-5 py-3 text-xs text-gray-500">
+            <p>
+              {formatNumber(filtered.length)} transaksi · omzet lunas{" "}
+              <b className="text-gray-800">{formatRupiah(filteredRevenue)}</b>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setPage(safePage - 1)}
+                disabled={safePage <= 1}
+                aria-label="Halaman sebelumnya"
+                className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 disabled:opacity-40"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="tabular-nums">
+                {safePage} / {pages}
+              </span>
+              <button
+                onClick={() => setPage(safePage + 1)}
+                disabled={safePage >= pages}
+                aria-label="Halaman berikutnya"
+                className="rounded-lg border border-gray-200 p-1.5 hover:bg-gray-50 disabled:opacity-40"
+              >
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
           </div>
         )}
       </div>
+
+      {/* Detail */}
+      {detail && (
+        <div
+          className="fixed inset-0 z-[60] grid place-items-end bg-black/50 backdrop-blur-sm animate-fade-in sm:place-items-center sm:p-4"
+          onClick={() => setDetail(null)}
+        >
+          <div
+            role="dialog"
+            aria-label={`Detail order ${detail.id}`}
+            onClick={(e) => e.stopPropagation()}
+            className="max-h-[90vh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-md sm:rounded-2xl"
+          >
+            <div className="flex items-start justify-between border-b border-gray-100 p-5">
+              <div>
+                <p className="eyebrow">Order</p>
+                <h3 className="text-xl font-semibold text-gray-900">#{detail.id}</h3>
+                <p className="mt-0.5 text-xs text-gray-500">{formatDateTime(detail.create_at)}</p>
+              </div>
+              <button onClick={() => setDetail(null)} aria-label="Tutup" className="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="space-y-4 p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <StatusBadge status={detail.status} />
+                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">{tableLabel(detail)}</span>
+                <span className="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                  {detail.tipe_order === "take_away" ? "Take away" : "Dine in"}
+                </span>
+              </div>
+              <dl className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <dt className="text-xs text-gray-400">Pelanggan</dt>
+                  <dd className="font-medium text-gray-800">{detail.customers?.name || "Guest"}</dd>
+                </div>
+                <div>
+                  <dt className="text-xs text-gray-400">Metode bayar</dt>
+                  <dd className="font-medium text-gray-800">{detail.payment_method?.name || "—"}</dd>
+                </div>
+              </dl>
+              <ul className="divide-y divide-gray-100 rounded-xl border border-gray-100">
+                {detail.orders.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                    <span className="text-gray-800">
+                      <b className="mr-1.5 text-brand-700">{i.qty}×</b>
+                      {i.menu?.nama || "Item dihapus"}
+                    </span>
+                    <span className="tabular-nums text-gray-600">{formatRupiah(i.total)}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
+                <span className="text-sm text-gray-500">Total</span>
+                <span className="text-lg font-semibold tabular-nums text-gray-900">{formatRupiah(detail.total)}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default AdminHistoryPage;
+}

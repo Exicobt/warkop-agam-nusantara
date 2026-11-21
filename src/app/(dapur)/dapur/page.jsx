@@ -1,394 +1,458 @@
-'use client'
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { Clock, ChefHat, CheckCircle, Calendar, Bell, Menu, CheckSquare, XCircle, Package } from "lucide-react"
-import Navbar from "../components/navbar"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import toast from "react-hot-toast";
+import {
+  AlertTriangle,
+  BellRing,
+  CheckCircle2,
+  ChefHat,
+  Clock,
+  Hourglass,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  UtensilsCrossed,
+  Volume2,
+  VolumeX,
+  WifiOff,
+} from "lucide-react";
+import Navbar from "../components/navbar";
+import { cn } from "@/lib/utils";
+import { formatElapsed, formatTime, minutesSince, tableLabel } from "@/lib/format";
 
-const ACTIVE_STATUSES = ["waiting", "preparing", "done"]
-const REFRESH_MS = 10000
+const POLL_MS = 8000;
+const LOOKBACK_MS = 24 * 60 * 60 * 1000;
 
-const isToday = (value) => {
-  const d = new Date(value)
-  const now = new Date()
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  )
-}
+const COLUMNS = [
+  {
+    status: "waiting",
+    title: "Antre",
+    hint: "Belum dimasak",
+    icon: Hourglass,
+    accent: "text-sky-700 bg-sky-100",
+    action: { label: "Mulai Masak", next: "preparing", icon: ChefHat, className: "bg-sky-600 hover:bg-sky-700" },
+  },
+  {
+    status: "preparing",
+    title: "Dimasak",
+    hint: "Sedang dikerjakan",
+    icon: ChefHat,
+    accent: "text-violet-700 bg-violet-100",
+    action: {
+      label: "Siap Disajikan",
+      next: "done",
+      icon: CheckCircle2,
+      className: "bg-emerald-600 hover:bg-emerald-700",
+      confirm: true,
+    },
+  },
+  {
+    status: "done",
+    title: "Siap Disajikan",
+    hint: "Menunggu kasir",
+    icon: BellRing,
+    accent: "text-emerald-700 bg-emerald-100",
+    action: null,
+  },
+];
 
-const Page = () => {
-  const [allOrders, setAllOrders] = useState([])
-  const [isLoading, setIsLoading] = useState(false)
-  const [filter, setFilter] = useState('all') // 'all', 'waiting', 'preparing', 'done'
-  const [selectedOrder, setSelectedOrder] = useState(null)
+const isToday = (value) => new Date(value).toDateString() === new Date().toDateString();
+
+export default function DapurPage() {
+  const [orders, setOrders] = useState([]);
+  const [loaded, setLoaded] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [offline, setOffline] = useState(false);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [busyIds, setBusyIds] = useState({});
+  const [confirmId, setConfirmId] = useState(null);
+  const [soundOn, setSoundOn] = useState(false);
+
+  const busyRef = useRef(new Set());
+  const knownWaiting = useRef(null);
+  const audioRef = useRef(null);
+  const soundRef = useRef(false);
+  const confirmTimer = useRef(null);
+
+  useEffect(() => {
+    soundRef.current = soundOn;
+  }, [soundOn]);
+
+  const beep = useCallback(() => {
+    const ctx = audioRef.current;
+    if (!ctx) return;
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.6);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.6);
+    } catch {
+      /* audio tidak tersedia: abaikan */
+    }
+  }, []);
+
+  const toggleSound = () => {
+    if (!soundOn) {
+      // AudioContext baru boleh dibuat/di-resume setelah interaksi pengguna.
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (Ctx) {
+        audioRef.current ||= new Ctx();
+        audioRef.current.resume?.();
+      }
+    }
+    setSoundOn((v) => !v);
+  };
 
   const fetchOrders = useCallback(async () => {
-    setIsLoading(true)
+    setSyncing(true);
     try {
-      const res = await fetch("/api/orders?status=all")
-      if (!res.ok) throw new Error(`HTTP ${res.status}`)
-      const data = await res.json()
-      setAllOrders(Array.isArray(data) ? data : [])
+      const from = new Date(Date.now() - LOOKBACK_MS).toISOString();
+      const res = await fetch(`/api/orders?status=all&from=${encodeURIComponent(from)}`, {
+        cache: "no-store",
+      });
+
+      if (res.status === 401) {
+        // Dulu error ini ditelan diam-diam sehingga layar tampak "hidup"
+        // padahal semua aksi gagal. Sekarang ditampilkan jelas.
+        setSessionExpired(true);
+        return;
+      }
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+      const incoming = Array.isArray(data) ? data : [];
+
+      setSessionExpired(false);
+      setOffline(false);
+      setOrders((prev) => {
+        // Pesanan yang sedang diproses (optimistic) jangan ditimpa data polling lama.
+        const local = new Map(prev.map((o) => [o.id, o]));
+        return incoming.map((o) => (busyRef.current.has(o.id) && local.has(o.id) ? local.get(o.id) : o));
+      });
+
+      // Bunyi + toast untuk pesanan antre yang baru masuk
+      const waitingIds = new Set(incoming.filter((o) => o.status === "waiting").map((o) => o.id));
+      if (knownWaiting.current) {
+        const fresh = [...waitingIds].filter((id) => !knownWaiting.current.has(id));
+        if (fresh.length) {
+          toast(`Pesanan baru masuk: #${fresh.join(", #")}`, { icon: "🔔" });
+          if (soundRef.current) beep();
+        }
+      }
+      knownWaiting.current = waitingIds;
+      setLoaded(true);
     } catch (error) {
-      // Polling gagal sesaat: pertahankan data terakhir
-      console.error("Error fetching orders:", error)
+      console.error("Gagal memuat pesanan:", error);
+      setOffline(true);
     } finally {
-      setIsLoading(false)
+      setSyncing(false);
     }
-  }, [])
+  }, [beep]);
 
-  // Statistik selalu dihitung dari seluruh pesanan, bukan dari hasil filter tampilan.
-  const { orders, waiting, cooking, ready, completed } = useMemo(() => {
-    const active = allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status))
-    return {
-      // Urutan dapur: yang paling lama menunggu di atas
-      orders: (filter === 'all' ? active : active.filter((o) => o.status === filter))
-        .slice()
-        .sort((a, b) => new Date(a.create_at) - new Date(b.create_at)),
-      waiting: active.filter((o) => o.status === 'waiting').length,
-      cooking: active.filter((o) => o.status === 'preparing').length,
-      ready: active.filter((o) => o.status === 'done').length,
-      completed: allOrders.filter((o) => o.status === 'finish' && isToday(o.create_at)).length,
+  useEffect(() => {
+    fetchOrders();
+    const poll = setInterval(fetchOrders, POLL_MS);
+    const tick = setInterval(() => setNow(Date.now()), 30000);
+    const onVisible = () => document.visibilityState === "visible" && fetchOrders();
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", fetchOrders);
+    return () => {
+      clearInterval(poll);
+      clearInterval(tick);
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", fetchOrders);
+      clearTimeout(confirmTimer.current);
+    };
+  }, [fetchOrders]);
+
+  const setBusy = (id, value) => {
+    if (value) busyRef.current.add(id);
+    else busyRef.current.delete(id);
+    setBusyIds((prev) => ({ ...prev, [id]: value }));
+  };
+
+  const patchLocal = (id, status) =>
+    setOrders((list) => list.map((o) => (o.id === id ? { ...o, status } : o)));
+
+  const advance = async (order, action) => {
+    if (busyRef.current.has(order.id)) return;
+
+    // Langkah konfirmasi inline (pengganti modal) untuk aksi yang tak bisa dibatalkan.
+    if (action.confirm && confirmId !== order.id) {
+      setConfirmId(order.id);
+      clearTimeout(confirmTimer.current);
+      confirmTimer.current = setTimeout(() => setConfirmId(null), 3500);
+      return;
     }
-  }, [allOrders, filter])
+    setConfirmId(null);
 
-  const updateStatus = async (order, status) => {
+    setBusy(order.id, true);
+    patchLocal(order.id, action.next); // optimistic
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ basket_id: order.id, status })
-      })
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        throw new Error(data.error || "Gagal mengupdate status pesanan")
+        body: JSON.stringify({ basket_id: order.id, status: action.next }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.status === 401) {
+        setSessionExpired(true);
+        throw new Error("Sesi login berakhir. Silakan login ulang.");
       }
+      if (!res.ok) throw new Error(data.error || "Gagal mengubah status pesanan.");
+
+      toast.success(
+        action.next === "preparing" ? `Order #${order.id} mulai dimasak` : `Order #${order.id} siap disajikan`
+      );
     } catch (error) {
-      console.error("Error updating status:", error)
-      alert(error.message || "Gagal mengupdate status pesanan")
+      patchLocal(order.id, order.status); // rollback
+      toast.error(error.message || "Gagal mengubah status pesanan.");
     } finally {
-      fetchOrders()
+      setBusy(order.id, false);
+      fetchOrders();
     }
-  }
+  };
 
-  const handleMarkAsReady = (order) => {
-    setSelectedOrder(order)
-  }
-
-  const confirmMarkAsReady = async () => {
-    if (selectedOrder) {
-      await updateStatus(selectedOrder, "done")
-      setSelectedOrder(null)
-    }
-  }
-
-  useEffect(() => {
-    fetchOrders()
-    const interval = setInterval(fetchOrders, REFRESH_MS)
-    return () => clearInterval(interval)
-  }, [fetchOrders])
-
-  const getStatusConfig = (status) => {
-    const configs = {
-      waiting: {
-        bg: "bg-gradient-to-br from-orange-50 to-yellow-50 border-l-4 border-orange-400",
-        badge: "bg-orange-100 text-orange-800",
-        icon: Clock,
-        iconColor: "text-orange-500",
-        label: "Menunggu"
+  const { byStatus, pendingCount, finishedToday } = useMemo(() => {
+    const sorted = [...orders].sort((a, b) => new Date(a.create_at) - new Date(b.create_at));
+    return {
+      byStatus: {
+        waiting: sorted.filter((o) => o.status === "waiting"),
+        preparing: sorted.filter((o) => o.status === "preparing"),
+        done: sorted.filter((o) => o.status === "done"),
       },
-      preparing: {
-        bg: "bg-gradient-to-br from-blue-50 to-cyan-50 border-l-4 border-blue-400",
-        badge: "bg-blue-100 text-blue-800",
-        icon: ChefHat,
-        iconColor: "text-blue-500",
-        label: "Memasak"
-      },
-      done: {
-        bg: "bg-gradient-to-br from-green-50 to-emerald-50 border-l-4 border-green-400",
-        badge: "bg-green-100 text-green-800",
-        icon: CheckCircle,
-        iconColor: "text-green-500",
-        label: "Siap Diambil"
-      },
-      finish: {
-        bg: "bg-gradient-to-br from-purple-50 to-pink-50 border-l-4 border-purple-400",
-        badge: "bg-purple-100 text-purple-800",
-        icon: Package,
-        iconColor: "text-purple-500",
-        label: "Selesai"
-      }
-    }
-    return configs[status] || configs.waiting
-  }
+      pendingCount: orders.filter((o) => o.status === "pending").length,
+      finishedToday: orders.filter((o) => o.status === "finish" && isToday(o.create_at)).length,
+    };
+  }, [orders]);
 
-  const formatTime = (dateString) => {
-    const date = new Date(dateString)
-    return date.toLocaleTimeString('id-ID', {
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-  }
+  const activeCount = byStatus.waiting.length + byStatus.preparing.length;
 
   return (
-    <div className='w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100'>
+    <div className="min-h-screen">
       <Navbar />
 
-      <div className='w-full pt-20 px-6 pb-8'>
-        {/* Statistics Cards */}
-        <div className='w-full mb-8 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6'>
-          <div className='bg-gradient-to-br from-orange-400 to-yellow-500 text-white rounded-2xl p-6 shadow-xl'>
-            <div className="flex items-center justify-between mb-4">
-              <Clock className="w-8 h-8 opacity-80" />
-              <Bell className="w-5 h-5 opacity-60" />
-            </div>
-            <div className="text-3xl font-bold mb-2">{waiting}</div>
-            <div className="text-orange-100 font-medium">Menunggu</div>
-          </div>
-
-          <div className='bg-gradient-to-br from-blue-400 to-cyan-500 text-white rounded-2xl p-6 shadow-xl'>
-            <div className="flex items-center justify-between mb-4">
-              <ChefHat className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="text-3xl font-bold mb-2">{cooking}</div>
-            <div className="text-blue-100 font-medium">Sedang Dimasak</div>
-          </div>
-
-          <div className='bg-gradient-to-br from-green-400 to-emerald-500 text-white rounded-2xl p-6 shadow-xl'>
-            <div className="flex items-center justify-between mb-4">
-              <CheckCircle className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="text-3xl font-bold mb-2">{ready}</div>
-            <div className="text-green-100 font-medium">Siap Diambil</div>
-            <div className="text-sm opacity-80 mt-2">*Menunggu konfirmasi kasir</div>
-          </div>
-
-          <div className='bg-gradient-to-br from-purple-400 to-pink-500 text-white rounded-2xl p-6 shadow-xl'>
-            <div className="flex items-center justify-between mb-4">
-              <Calendar className="w-8 h-8 opacity-80" />
-            </div>
-            <div className="text-3xl font-bold mb-2">{completed}</div>
-            <div className="text-purple-100 font-medium">Selesai Hari Ini</div>
-            <div className="text-sm opacity-80 mt-2">*Sudah dikonfirmasi kasir</div>
-          </div>
-        </div>
-
-        {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-xl p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Dashboard Dapur</h2>
-              <p className="text-gray-500">Kelola semua pesanan yang masuk</p>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              {/* Filter Buttons */}
-              <div className="flex gap-2 bg-gray-100 p-1.5 rounded-lg">
-                <button
-                  onClick={() => setFilter('all')}
-                  className={`px-4 py-2 rounded-md transition-colors ${filter === 'all' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'}`}
-                >
-                  Semua
-                </button>
-                <button
-                  onClick={() => setFilter('waiting')}
-                  className={`px-4 py-2 rounded-md transition-colors ${filter === 'waiting' ? 'bg-white shadow text-orange-600' : 'text-gray-600 hover:text-gray-800'}`}
-                >
-                  Menunggu
-                </button>
-                <button
-                  onClick={() => setFilter('preparing')}
-                  className={`px-4 py-2 rounded-md transition-colors ${filter === 'preparing' ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'}`}
-                >
-                  Memasak
-                </button>
-                <button
-                  onClick={() => setFilter('done')}
-                  className={`px-4 py-2 rounded-md transition-colors ${filter === 'done' ? 'bg-white shadow text-green-600' : 'text-gray-600 hover:text-gray-800'}`}
-                >
-                  Siap
-                </button>
-              </div>
-              
-              <div className="flex gap-2">
-                <button 
-                  onClick={fetchOrders} 
-                  disabled={isLoading}
-                  className={`${isLoading ? 'bg-gray-300' : 'bg-blue-500 hover:bg-blue-600'} text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2`}
-                >
-                  {isLoading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Loading...
-                    </>
-                  ) : 'Refresh'}
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Orders List */}
-          <div className="space-y-4">
-            {orders.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="text-gray-400 text-6xl mb-4">🍳</div>
-                <div className="text-black/50 text-lg">Tidak ada pesanan saat ini</div>
-                <div className="text-gray-400 text-sm mt-2">Semua pesanan sudah ditangani</div>
-              </div>
-            ) : (
-              orders.map((order) => {
-                const config = getStatusConfig(order.status)
-                const StatusIcon = config.icon
-                
-                return (
-                  <div key={order.id} className={`${config.bg} rounded-xl p-5 hover:shadow-lg transition-all duration-300`}>
-                    <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-                      {/* Order Info */}
-                      <div className="flex-1">
-                        <div className="flex items-start gap-4">
-                          <div className="bg-white p-3 rounded-xl shadow-sm">
-                            <StatusIcon className={`w-6 h-6 ${config.iconColor}`} />
-                          </div>
-                          
-                          <div className="flex-1">
-                            <div className="flex flex-wrap items-center gap-3 mb-2">
-                              <h3 className="font-bold text-lg text-gray-800">Order #{order.id}</h3>
-                              <span className={`${config.badge} px-3 py-1 rounded-full text-sm font-medium`}>
-                                {config.label}
-                              </span>
-                              <span className="text-sm text-gray-500">
-                                {formatTime(order.create_at)}
-                              </span>
-                            </div>
-                            
-                            <div className="text-gray-600 mb-3">
-                              {order.customers?.table && order.customers.table.table_number !== "0" ? (
-                                <span className="font-semibold">Meja {order.customers.table.table_number}</span>
-                              ) : (
-                                <span className="font-semibold">Take Away</span>
-                              )}
-                              <span className="mx-2">•</span>
-                              <span>{order.customers?.name || "Guest"}</span>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-2">
-                              {order.orders.map((item) => (
-                                <span key={item.id} className="bg-white bg-opacity-60 px-3 py-1 rounded-lg text-sm font-medium text-gray-700 flex items-center gap-2">
-                                  <span>{item.menu?.nama || "Item dihapus"}</span>
-                                  <span className="text-orange-500">×{item.qty}</span>
-                                </span>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-2">
-                        {order.status === 'waiting' && (
-                          <button 
-                            onClick={() => updateStatus(order, "preparing")}
-                            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                          >
-                            <ChefHat size={18} />
-                            Mulai Masak
-                          </button>
-                        )}
-                        
-                        {order.status === 'preparing' && (
-                          <button 
-                            onClick={() => handleMarkAsReady(order)}
-                            className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                          >
-                            <CheckCircle size={18} />
-                            Siap Disajikan
-                          </button>
-                        )}
-                        
-                        {order.status === 'done' && (
-                          <div className="text-center p-2">
-                            <div className="text-green-600 font-bold mb-2">✓ Siap Diambil</div>
-                            <div className="text-sm text-gray-500">Menunggu kasir</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    
-                    {/* Notes for done status */}
-                    {order.status === 'done' && (
-                      <div className="mt-4 pt-3 border-t border-green-200 border-dashed">
-                        <div className="flex items-center justify-between">
-                          <div className="text-sm text-green-600 font-medium flex items-center gap-2">
-                            <Bell size={16} />
-                            Pesanan sudah siap! Tunggu kasir mengambil pesanan ini.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )
-              })
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Confirmation Modal */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-in fade-in zoom-in-95">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Konfirmasi Pesanan Siap</h3>
-              <button 
-                onClick={() => setSelectedOrder(null)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <XCircle size={20} className="text-gray-500" />
-              </button>
-            </div>
-            
-            <div className="mb-6">
-              <p className="text-gray-600 mb-4">
-                Apakah pesanan <span className="font-bold">Order #{selectedOrder.id}</span> sudah siap disajikan?
-              </p>
-              
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <CheckSquare className="text-yellow-600 mt-0.5" size={20} />
-                  <div>
-                    <p className="text-sm text-yellow-800 font-medium">
-                      Catatan Penting:
-                    </p>
-                    <p className="text-sm text-yellow-700 mt-1">
-                      Status akan berubah menjadi <span className="font-bold">&quot;Siap Diambil&quot;</span>. 
-                      Pesanan tidak akan otomatis selesai. Kasir harus menandai selesai terlebih dahulu.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="flex-1 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium rounded-xl transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={confirmMarkAsReady}
-                className="flex-1 py-3 bg-green-500 hover:bg-green-600 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2"
-              >
-                <CheckCircle size={18} />
-                Ya, Pesanan Siap
-              </button>
-            </div>
+      {sessionExpired && (
+        <div className="border-b border-rose-200 bg-rose-50">
+          <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
+            <p className="flex items-center gap-2 text-sm font-medium text-rose-800">
+              <AlertTriangle className="h-4 w-4" />
+              Sesi login berakhir — status pesanan tidak bisa diubah sampai login ulang.
+            </p>
+            <Link href="/" className="btn bg-rose-600 py-2 text-white hover:bg-rose-700">
+              <LogIn className="h-4 w-4" />
+              Login ulang
+            </Link>
           </div>
         </div>
       )}
+      {offline && !sessionExpired && (
+        <div className="border-b border-amber-200 bg-amber-50">
+          <div className="mx-auto flex max-w-[1600px] items-center gap-2 px-4 py-2.5 text-sm font-medium text-amber-800 sm:px-6">
+            <WifiOff className="h-4 w-4" />
+            Koneksi terputus — mencoba menyambung kembali…
+          </div>
+        </div>
+      )}
+
+      <div className="mx-auto max-w-[1600px] px-4 py-5 sm:px-6">
+        {/* Ringkasan */}
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <Pill tone="sky" label="Antre" value={byStatus.waiting.length} />
+            <Pill tone="violet" label="Dimasak" value={byStatus.preparing.length} />
+            <Pill tone="emerald" label="Siap" value={byStatus.done.length} />
+            <Pill tone="stone" label="Selesai hari ini" value={finishedToday} />
+            {pendingCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5 text-xs font-medium text-amber-800">
+                <Clock className="h-3.5 w-3.5" />
+                {pendingCount} pesanan menunggu konfirmasi kasir
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleSound}
+              className={cn(
+                "btn border py-2",
+                soundOn
+                  ? "border-brand-200 bg-brand-50 text-brand-800"
+                  : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+              )}
+              aria-pressed={soundOn}
+            >
+              {soundOn ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
+              {soundOn ? "Suara aktif" : "Aktifkan suara"}
+            </button>
+            <button onClick={fetchOrders} disabled={syncing} className="btn-soft py-2">
+              <RefreshCw className={cn("h-4 w-4", syncing && "animate-spin")} />
+              <span className="hidden sm:inline">Segarkan</span>
+            </button>
+          </div>
+        </div>
+
+        {!loaded ? (
+          <div className="grid place-items-center py-24 text-gray-400">
+            <Loader2 className="h-8 w-8 animate-spin" />
+          </div>
+        ) : (
+          <>
+            {activeCount === 0 && byStatus.done.length === 0 && (
+              <div className="surface mb-5 flex flex-col items-center px-6 py-14 text-center">
+                <span className="mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-gray-100 text-gray-400">
+                  <UtensilsCrossed className="h-7 w-7" />
+                </span>
+                <p className="text-base font-semibold text-gray-800">Belum ada pesanan</p>
+                <p className="mt-1 text-sm text-gray-500">
+                  Pesanan baru muncul di sini setelah kasir menerimanya.
+                </p>
+              </div>
+            )}
+
+            <div className="grid gap-5 lg:grid-cols-3">
+              {COLUMNS.map((col) => (
+                <section key={col.status} className="flex min-h-[200px] flex-col rounded-2xl bg-gray-200/50 p-3">
+                  <header className="mb-3 flex items-center justify-between px-1.5 pt-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className={cn("grid h-8 w-8 place-items-center rounded-lg", col.accent)}>
+                        <col.icon className="h-4 w-4" />
+                      </span>
+                      <div className="leading-tight">
+                        <h2 className="text-sm font-semibold text-gray-900">{col.title}</h2>
+                        <p className="text-[11px] text-gray-500">{col.hint}</p>
+                      </div>
+                    </div>
+                    <span className="grid h-7 min-w-7 place-items-center rounded-full bg-white px-2 text-xs font-bold text-gray-700 tabular-nums">
+                      {byStatus[col.status].length}
+                    </span>
+                  </header>
+
+                  <div className="flex flex-1 flex-col gap-3">
+                    {byStatus[col.status].length === 0 ? (
+                      <p className="m-auto py-8 text-xs text-gray-400">Kosong</p>
+                    ) : (
+                      byStatus[col.status].map((order) => (
+                        <Ticket
+                          key={order.id}
+                          order={order}
+                          column={col}
+                          now={now}
+                          busy={!!busyIds[order.id]}
+                          confirming={confirmId === order.id}
+                          onAdvance={advance}
+                        />
+                      ))
+                    )}
+                  </div>
+                </section>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
     </div>
-  )
+  );
 }
 
-export default Page
+function Pill({ label, value, tone }) {
+  const tones = {
+    sky: "bg-sky-100 text-sky-800",
+    violet: "bg-violet-100 text-violet-800",
+    emerald: "bg-emerald-100 text-emerald-800",
+    stone: "bg-white text-gray-600 ring-1 ring-gray-200",
+  };
+  return (
+    <span className={cn("inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-medium", tones[tone])}>
+      {label}
+      <span className="text-sm font-bold tabular-nums">{value}</span>
+    </span>
+  );
+}
+
+function Ticket({ order, column, now, busy, confirming, onAdvance }) {
+  const waited = minutesSince(order.create_at, now);
+  const urgent = column.status !== "done" && waited >= 20;
+  const warn = column.status !== "done" && waited >= 10 && !urgent;
+  const action = column.action;
+
+  return (
+    <article
+      className={cn(
+        "animate-rise rounded-xl border bg-white p-4 shadow-sm transition",
+        urgent ? "border-rose-300 ring-2 ring-rose-100" : warn ? "border-amber-300" : "border-gray-200"
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <h3 className="text-lg font-bold tracking-tight text-gray-900">#{order.id}</h3>
+            <span className="rounded-md bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-700">
+              {tableLabel(order)}
+            </span>
+          </div>
+          <p className="mt-0.5 truncate text-xs text-gray-500">
+            {order.customers?.name || "Guest"} · masuk {formatTime(order.create_at)}
+          </p>
+        </div>
+        <span
+          className={cn(
+            "inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold tabular-nums",
+            urgent
+              ? "bg-rose-100 text-rose-700"
+              : warn
+              ? "bg-amber-100 text-amber-800"
+              : "bg-gray-100 text-gray-600"
+          )}
+        >
+          <Clock className="h-3 w-3" />
+          {formatElapsed(order.create_at, now)}
+        </span>
+      </div>
+
+      <ul className="mt-3 divide-y divide-gray-100 rounded-lg border border-gray-100">
+        {order.orders.map((item) => (
+          <li key={item.id} className="flex items-center gap-3 px-3 py-2">
+            <span className="grid h-7 min-w-7 place-items-center rounded-md bg-brand-50 px-1.5 text-sm font-bold text-brand-700 tabular-nums">
+              {item.qty}×
+            </span>
+            <span className="text-sm font-medium text-gray-800">{item.menu?.nama || "Item dihapus"}</span>
+          </li>
+        ))}
+      </ul>
+
+      {action ? (
+        <button
+          onClick={() => onAdvance(order, action)}
+          disabled={busy}
+          className={cn(
+            "btn mt-3 w-full py-3 text-white",
+            confirming ? "bg-gray-900 hover:bg-gray-800" : action.className
+          )}
+        >
+          {busy ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <action.icon className="h-4 w-4" />
+          )}
+          {busy ? "Menyimpan…" : confirming ? "Ketuk lagi untuk konfirmasi" : action.label}
+        </button>
+      ) : (
+        <p className="mt-3 flex items-center justify-center gap-2 rounded-lg bg-emerald-50 py-2.5 text-xs font-medium text-emerald-700">
+          <BellRing className="h-3.5 w-3.5" />
+          Siap — tunggu kasir mengambil
+        </p>
+      )}
+    </article>
+  );
+}

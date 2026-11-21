@@ -141,7 +141,7 @@ const TambahKomboMenu = () => {
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
 
         <div className="flex-1 p-6">
@@ -183,7 +183,7 @@ const TambahKomboMenu = () => {
                           value={formData.name}
                           onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
                           placeholder="Contoh: Nasi Goreng + Es Teh"
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                           required
                         />
                       </div>
@@ -202,7 +202,7 @@ const TambahKomboMenu = () => {
                             value={formData.price}
                             onChange={(e) => setFormData(prev => ({ ...prev, price: e.target.value }))}
                             placeholder="0"
-                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                            className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                             required
                             min="1"
                           />
@@ -225,7 +225,7 @@ const TambahKomboMenu = () => {
                         placeholder="Cari menu..."
                         value={searchMenu}
                         onChange={(e) => setSearchMenu(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                       />
                     </div>
 
@@ -281,7 +281,7 @@ const TambahKomboMenu = () => {
                       
                       <div className="flex justify-between text-sm">
                         <span className="text-gray-600">Harga Kombo:</span>
-                        <span className="font-medium text-orange-600">
+                        <span className="font-medium text-brand-600">
                           Rp {formData.price ? parseInt(formData.price).toLocaleString() : "0"}
                         </span>
                       </div>
@@ -324,8 +324,8 @@ const TambahKomboMenu = () => {
                               className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
                             >
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 bg-orange-100 rounded flex items-center justify-center">
-                                  <Package className="w-3 h-3 text-orange-600" />
+                                <div className="w-8 h-8 bg-brand-100 rounded flex items-center justify-center">
+                                  <Package className="w-3 h-3 text-brand-600" />
                                 </div>
                                 <span className="text-sm font-medium text-gray-800">
                                   {menu.nama}
@@ -349,7 +349,7 @@ const TambahKomboMenu = () => {
                   <button
                     type="submit"
                     disabled={isLoading || formData.items.length < 2}
-                    className="w-full bg-orange-500 hover:bg-orange-600 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
+                    className="w-full bg-brand-500 hover:bg-brand-600 disabled:bg-gray-400 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center gap-2 transition-colors"
                   >
                     <Save className="w-5 h-5" />
                     {isLoading ? "Menyimpan..." : "Simpan Kombo Menu"}

@@ -135,7 +135,7 @@ const UpdateTable = () => {
 
   if (loading) {
     return (
-      <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+      <div className="w-full min-h-screen bg-gray-50">
         <div className="flex">
           <div className="flex-1 p-6 h-screen flex items-center justify-center">
             <div className="text-center">
@@ -149,7 +149,7 @@ const UpdateTable = () => {
   }
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
         <div className="flex-1 p-6 ">
           <div className="max-w-4xl mx-auto">
@@ -206,7 +206,7 @@ const UpdateTable = () => {
                         value={formData.status}
                         name="status"
                         onChange={handleInputChange}
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent ${
                           errors.status ? "border-red-500" : "border-gray-200"
                         }`}
                       >
@@ -234,7 +234,7 @@ const UpdateTable = () => {
                   <button
                     type="submit"
                     disabled={updating}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
+                    className="px-6 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center cursor-pointer"
                   >
                     {updating && (
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>

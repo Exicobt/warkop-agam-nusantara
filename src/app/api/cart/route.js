@@ -10,6 +10,7 @@ import {
 
 const MAX_LINES = 50;
 const MAX_QTY = 99;
+const MAX_PENDING_PER_TABLE = 3;
 
 /** Gabungkan baris duplikat & validasi { id, qty, type }. */
 function parseLines(orders) {
@@ -115,23 +116,22 @@ export async function POST(request) {
       let tipeOrder;
 
       if (token) {
-        // Klaim token secara atomik: hanya satu request yang bisa memakainya.
-        const session = await tx.tableSessions.findFirst({
-          where: { token, status: "active", expired_at: { gt: new Date() } },
-          include: { table: true },
-        });
-        if (!session) throw new HttpError(400, "QR code sudah tidak valid atau kedaluwarsa.");
-        if (!session.table || session.table.status !== "available") {
-          throw new HttpError(400, "Meja tidak tersedia atau sedang digunakan.");
-        }
-        const claimed = await tx.tableSessions.updateMany({
-          where: { token, status: "active" },
-          data: { status: "used" },
-        });
-        if (claimed.count !== 1) throw new HttpError(409, "QR code baru saja dipakai.");
+        // QR permanen: token mengidentifikasi meja, bukan sekali pakai.
+        const table = await tx.table.findFirst({ where: { qr_token: token } });
+        if (!table) throw new HttpError(400, "QR code tidak dikenali. Minta kasir untuk QR terbaru.");
+        if (table.status === "not_available") throw new HttpError(400, "Meja sedang tidak tersedia.");
 
-        tableRecord = session.table;
-        customerName = `Meja ${session.table.table_number}`;
+        // Pengaman spam: QR permanen bisa dipindai siapa saja, jadi batasi
+        // pesanan yang menumpuk menunggu konfirmasi kasir.
+        const pendingCount = await tx.basket.count({
+          where: { status: "pending", customers: { table_id: table.id } },
+        });
+        if (pendingCount >= MAX_PENDING_PER_TABLE) {
+          throw new HttpError(429, "Masih ada pesanan meja ini yang menunggu konfirmasi kasir. Mohon tunggu sebentar.");
+        }
+
+        tableRecord = table;
+        customerName = `Meja ${table.table_number}`;
         tipeOrder = "dine_in";
       } else {
         tipeOrder = body.tipe_order === "dine_in" ? "dine_in" : "take_away";
@@ -167,9 +167,6 @@ export async function POST(request) {
         select: { id: true, status: true, total: true, tipe_order: true },
       });
 
-      if (token) {
-        await tx.tableSessions.update({ where: { token }, data: { order_id: created.id } });
-      }
       return created;
     });
 

@@ -146,7 +146,7 @@ const KomboMenu = () => {
   }, []);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
 
         <div className="flex-1 p-6">
@@ -168,7 +168,7 @@ const KomboMenu = () => {
                 </button>
                 <button
                   onClick={() => router.push("/dashboard/kombo_menu/tambah")}
-                  className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                  className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                   Tambah Kombo Menu
@@ -176,7 +176,7 @@ const KomboMenu = () => {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
               <div className="p-6 border-b border-gray-200">
                 <div className="flex items-center gap-4">
                   <div className="relative flex-1">
@@ -186,7 +186,7 @@ const KomboMenu = () => {
                       placeholder="Cari kombo menu..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-transparent"
                     />
                   </div>
                 </div>
@@ -231,7 +231,7 @@ const KomboMenu = () => {
                               <TableCell>{index + 1}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-3">
-                                  <div className="w-12 h-12 bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg flex items-center justify-center">
+                                  <div className="w-12 h-12 bg-brand-600 rounded-lg flex items-center justify-center">
                                     <Package className="w-6 h-6 text-white" />
                                   </div>
                                   <div>
@@ -258,7 +258,7 @@ const KomboMenu = () => {
                                   <div className="text-sm text-gray-500 line-through">
                                     Rp {totalIndividual.toLocaleString()}
                                   </div>
-                                  <div className="font-semibold text-orange-600">
+                                  <div className="font-semibold text-brand-600">
                                     Rp {kombo.price?.toLocaleString() || "0"}
                                   </div>
                                 </div>

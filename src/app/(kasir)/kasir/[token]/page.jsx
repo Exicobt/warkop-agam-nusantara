@@ -151,7 +151,7 @@ const Menu = () => {
       toast.success("Pesanan berhasil dikirim!");
       setAllOrders([]);
       setPaymentMethod("");
-      setOrdered(true); // QR sekali pakai: tampilkan layar konfirmasi
+      setOrdered(true); // QR permanen: tampilkan konfirmasi + tombol pesan lagi
     } catch (error) {
       console.error(error);
       toast.error(error.message || "Terjadi kesalahan saat menyimpan");
@@ -290,8 +290,14 @@ const Menu = () => {
           <h1 className="text-xl font-bold text-gray-800 mb-2">Pesanan terkirim!</h1>
           <p className="text-gray-600 text-sm">
             Pesanan untuk meja #{session?.table_number} sedang diteruskan ke kasir.
-            Silakan tunggu di meja Anda. Untuk menambah pesanan, hubungi kasir.
+            Silakan tunggu di meja Anda.
           </p>
+          <button
+            onClick={() => setOrdered(false)}
+            className="btn-primary mt-6 w-full"
+          >
+            Pesan lagi
+          </button>
         </div>
       </div>
     );
@@ -344,11 +350,11 @@ const Menu = () => {
                   {combos.length > 0 && (
                     <div>
                       <div className="flex items-center gap-2 mb-4">
-                        <Package size={24} className="text-orange-500" />
+                        <Package size={24} className="text-brand-500" />
                         <h3 className="text-lg font-bold text-gray-800">
                           Kombo Menu
                         </h3>
-                        <span className="bg-orange-100 text-orange-800 px-2 py-1 rounded-full text-xs">
+                        <span className="bg-brand-100 text-brand-800 px-2 py-1 rounded-full text-xs">
                           {combos.length} paket
                         </span>
                       </div>
@@ -493,14 +499,14 @@ const Menu = () => {
                               {order.type === "combo" && (
                                 <Package
                                   size={16}
-                                  className="text-orange-500 flex-shrink-0"
+                                  className="text-brand-500 flex-shrink-0"
                                 />
                               )}
                               <span className="capitalize truncate">
                                 {order.nama}
                               </span>
                               {order.type === "combo" && (
-                                <span className="bg-orange-100 text-orange-800 px-1 py-0.5 rounded text-xs flex-shrink-0">
+                                <span className="bg-brand-100 text-brand-800 px-1 py-0.5 rounded text-xs flex-shrink-0">
                                   Kombo
                                 </span>
                               )}

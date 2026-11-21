@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, Edit2, Plus, Trash2, Users2, XCircle, QrCode, Download } from "lucide-react";
+import { CheckCircle, Edit2, Plus, Trash2, Users2, XCircle, QrCode, Download, RefreshCw } from "lucide-react";
 import {
   Table,
   TableHeader,
@@ -87,7 +87,7 @@ const TablePage = () => {
     );
   };
 
-  const generateQRCode = async (table) => {
+  const generateQRCode = async (table, regenerate = false) => {
     setIsGeneratingQR(table.id);
     
     try {
@@ -99,7 +99,8 @@ const TablePage = () => {
         },
         body: JSON.stringify({
           table_number: table.table_number,
-          table_id: table.id
+          table_id: table.id,
+          regenerate,
         }),
       });
 
@@ -186,7 +187,12 @@ const TablePage = () => {
         downloadLink.click();
         document.body.removeChild(downloadLink);
 
-        toast.success(`QR Code Meja ${table.table_number} berhasil di download`);
+        toast.success(
+          regenerate
+            ? `QR Meja ${table.table_number} diganti. Cetak ulang QR yang baru.`
+            : `QR Code Meja ${table.table_number} berhasil di download`
+        );
+        if (regenerate) fetchTable();
         setIsGeneratingQR(null);
       };
 
@@ -203,7 +209,7 @@ const TablePage = () => {
   };
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="w-full min-h-screen bg-gray-50">
       <div className="flex pt-16">
         <div className="flex-1 p-6 ">
           <div className="space-y-6">
@@ -216,7 +222,7 @@ const TablePage = () => {
               </div>
               <button
                 onClick={() => router.push("/dashboard/table/tambah")}
-                className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
+                className="bg-brand-500 hover:bg-brand-600 text-white px-4 py-2 rounded-lg font-medium flex items-center gap-2 transition-colors"
               >
                 <Plus className="w-4 h-4" />
                 Tambah Meja
@@ -265,13 +271,13 @@ const TablePage = () => {
                 </div>
               </div>
               <div className="flex gap-5 items-center bg-white p-5 rounded-lg shadow-md">
-                <div className="p-2 w-10 h-10 rounded-md bg-blue-300/30">
-                  <QrCode className="text-blue-400" />
+                <div className="p-2 w-10 h-10 rounded-md bg-brand-300/30">
+                  <QrCode className="text-brand-400" />
                 </div>
                 <div className="flex flex-col">
                   QR Tersedia
                   <span className="font-bold text-xxl">
-                    {tables.length} {/* Sementara sama dengan total meja */}
+                    {tables.filter((t) => t.qr_generated_at).length}
                   </span>
                 </div>
               </div>
@@ -283,7 +289,7 @@ const TablePage = () => {
                 type="text"
                 placeholder="Cari nomor meja"
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="border border-gray-200 w-full p-2 rounded-md focus:ring-2 focus:ring-orange-500 focus:border-transparent"
+                className="border border-gray-200 w-full p-2 rounded-md focus:ring-2 focus:ring-brand-500 focus:border-transparent"
               />
             </div>
 
@@ -325,14 +331,15 @@ const TablePage = () => {
                             </span>
                           </TableCell>
                           <TableCell>
+                            <div className="flex items-center gap-4">
                             <button
                               onClick={() => generateQRCode(table)}
                               disabled={isGeneratingQR === table.id}
-                              className="flex items-center justify-center gap-3 text-blue-500 underline cursor-pointer"
+                              className="flex items-center justify-center gap-3 text-brand-500 underline cursor-pointer"
                             >
                               {isGeneratingQR === table.id ? (
                                 <>
-                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  <div className="w-4 h-4 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
                                   Generating...
                                 </>
                               ) : (
@@ -342,6 +349,19 @@ const TablePage = () => {
                                 </>
                               )}
                             </button>
+                              <button
+                                onClick={() => {
+                                  if (window.confirm(`Ganti QR Meja ${table.table_number}? QR yang sudah dicetak/ditempel akan berhenti berfungsi dan harus dicetak ulang.`)) {
+                                    generateQRCode(table, true);
+                                  }
+                                }}
+                                disabled={isGeneratingQR === table.id}
+                                className="p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700 rounded-lg transition-colors"
+                                title="Ganti QR (QR lama tidak berlaku)"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            </div>
                           </TableCell>
                           <TableCell>
                             <div className="flex justify-center items-center gap-2">

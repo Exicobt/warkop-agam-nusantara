@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { signInWithEmailAndPassword, sendPasswordResetEmail, signOut } from "firebase/auth";
-import { Lock, User, Coffee, ArrowRight, AlertCircle, CheckCircle, Mail, X } from "lucide-react";
+import { Lock, Coffee, ArrowRight, AlertCircle, CheckCircle2, Mail, X, Eye, EyeOff, Loader2 } from "lucide-react";
 import { auth } from "@/lib/firebase";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -27,6 +27,7 @@ export default function LoginPage() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [resetEmail, setResetEmail] = useState("");
   const [resetLoading, setResetLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const notifTimer = useRef(null);
 
@@ -135,256 +136,200 @@ export default function LoginPage() {
     }
   };
 
+
+  const toastTone = {
+    error: "border-rose-200 bg-rose-50 text-rose-800",
+    success: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    loading: "border-gray-200 bg-white text-gray-700",
+    info: "border-brand-200 bg-brand-50 text-brand-800",
+  };
+
   return (
-    <div className="min-h-screen flex bg-white">
-      {/* Notification Toast */}
+    <div className="flex min-h-screen bg-background">
       {notification && (
-        <div className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg border backdrop-blur-sm animate-[slideIn_0.3s_ease] ${
-          notification.type === "error" ? "bg-red-50 border-red-200 text-red-800" :
-          notification.type === "success" ? "bg-green-50 border-green-200 text-green-800" :
-          notification.type === "loading" ? "bg-blue-50 border-blue-200 text-blue-800" :
-          "bg-orange-50 border-orange-200 text-orange-800"
-        }`}>
-          {notification.type === "loading" && (
-            <div className="w-5 h-5 border-2 border-blue-600/30 border-t-blue-600 rounded-full animate-spin"></div>
-          )}
-          {notification.type === "error" && <AlertCircle size={20} className="text-red-600" />}
-          {notification.type === "success" && <CheckCircle size={20} className="text-green-600" />}
-          <span className="font-medium">{notification.message}</span>
+        <div
+          role="status"
+          className={`fixed right-4 top-4 z-50 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-medium shadow-lg animate-rise ${
+            toastTone[notification.type] || toastTone.info
+          }`}
+        >
+          {notification.type === "loading" && <Loader2 className="h-4 w-4 animate-spin text-brand-600" />}
+          {notification.type === "error" && <AlertCircle className="h-4 w-4 text-rose-600" />}
+          {notification.type === "success" && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+          {notification.message}
         </div>
       )}
 
-      {/* Modal Forgot Password */}
+      {/* Modal lupa password */}
       {showForgotPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md transform transition-all animate-[modalSlideIn_0.3s_ease]">
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h3 className="text-xl font-bold text-slate-900">Reset Password</h3>
-                <button
-                  onClick={() => {
-                    setShowForgotPassword(false);
-                    setResetEmail("");
-                  }}
-                  className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-                  disabled={resetLoading}
-                >
-                  <X size={20} className="text-slate-500" />
-                </button>
-              </div>
-
-              <p className="text-slate-600 mb-6">
-                Masukkan email Anda yang terdaftar. Kami akan mengirimkan link untuk mereset password.
-              </p>
-
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                      <Mail size={18} />
-                    </div>
-                    <input
-                      type="email"
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      className="block w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-100 transition-all duration-200"
-                      placeholder="email@example.com"
-                      disabled={resetLoading}
-                      onKeyDown={(e) => e.key === 'Enter' && handleForgotPassword()}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex gap-3 pt-2">
-                  <button
-                    onClick={() => {
-                      setShowForgotPassword(false);
-                      setResetEmail("");
-                    }}
-                    className="flex-1 py-3 px-4 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-200 transition-all duration-200 disabled:opacity-50"
-                    disabled={resetLoading}
-                  >
-                    Batal
-                  </button>
-                  <button
-                    onClick={handleForgotPassword}
-                    disabled={resetLoading}
-                    className="flex-1 py-3 px-4 border border-transparent rounded-xl shadow-lg shadow-orange-200 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-4 focus:ring-orange-200 transition-all duration-200 disabled:opacity-70"
-                  >
-                    {resetLoading ? (
-                      <div className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Mengirim...</span>
-                      </div>
-                    ) : (
-                      "Kirim Reset Link"
-                    )}
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-8 p-4 bg-orange-50 rounded-xl border border-orange-100">
-                <p className="text-xs text-orange-800">
-                  <span className="font-semibold">Tips:</span> Cek folder spam jika email tidak ditemukan di inbox. Link reset berlaku selama 1 jam.
-                </p>
-              </div>
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/50 p-4 backdrop-blur-sm animate-fade-in">
+          <div role="dialog" aria-label="Reset password" className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl animate-rise">
+            <div className="mb-2 flex items-start justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Reset password</h3>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmail("");
+                }}
+                disabled={resetLoading}
+                aria-label="Tutup"
+                className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
+            <p className="mb-5 text-sm text-gray-500">
+              Masukkan email terdaftar. Kami akan mengirim tautan untuk mengatur ulang password.
+            </p>
+
+            <label className="mb-1.5 block text-sm font-medium text-gray-700" htmlFor="reset-email">Email</label>
+            <div className="relative">
+              <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
+              <input
+                id="reset-email"
+                type="email"
+                value={resetEmail}
+                onChange={(e) => setResetEmail(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleForgotPassword()}
+                disabled={resetLoading}
+                placeholder="email@contoh.com"
+                className="field py-3 pl-10"
+              />
+            </div>
+
+            <div className="mt-5 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setResetEmail("");
+                }}
+                disabled={resetLoading}
+                className="btn-soft flex-1 py-3"
+              >
+                Batal
+              </button>
+              <button onClick={handleForgotPassword} disabled={resetLoading} className="btn-primary flex-1 py-3">
+                {resetLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+                {resetLoading ? "Mengirim…" : "Kirim tautan"}
+              </button>
+            </div>
+            <p className="mt-4 rounded-xl bg-gray-50 p-3 text-xs text-gray-500">
+              Tidak ada email masuk? Periksa folder spam. Tautan berlaku 1 jam.
+            </p>
           </div>
         </div>
       )}
 
-      {/* --- BAGIAN KIRI: VISUAL WARKOP --- */}
-      <div className="hidden lg:flex w-1/2 bg-slate-900 relative justify-center items-center overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-900/80 to-black/60 z-10"></div>
-        <Image src="/foto-warkop.jpg" alt="Suasana Warkop" fill priority sizes="50vw" className="object-cover opacity-60" />
-
-        <div className="relative z-20 text-center px-12">
-          <div className="mb-6 inline-flex p-4 bg-white/10 backdrop-blur-md rounded-full border border-white/20 shadow-2xl">
-            <Coffee size={48} className="text-orange-400" />
+      {/* Panel visual */}
+      <div className="relative hidden w-1/2 overflow-hidden bg-espresso-950 lg:block">
+        <Image src="/foto-warkop.jpg" alt="Suasana Warkop Agam Nusantara" fill priority sizes="50vw" className="object-cover opacity-50" />
+        <div className="absolute inset-0 bg-gradient-to-t from-espresso-950 via-espresso-950/50 to-espresso-950/20" />
+        <div className="relative z-10 flex h-full flex-col justify-between p-12">
+          <div className="flex items-center gap-3">
+            <span className="grid h-11 w-11 place-items-center rounded-xl bg-brand-500 text-espresso-950">
+              <Coffee className="h-5 w-5" strokeWidth={2.5} />
+            </span>
+            <span className="text-sm font-semibold tracking-wide text-white">Warkop Agam Nusantara</span>
           </div>
-          <h1 className="text-5xl font-bold text-white mb-4 tracking-tight drop-shadow-lg">
-            Warkop <span className="text-orange-400">Agam Nusantara</span>
-          </h1>
-          <p className="text-slate-200 text-lg max-w-md mx-auto leading-relaxed font-medium drop-shadow-md">
-            &ldquo;Satu cangkir kopi, sejuta inspirasi. Kelola pesanan dengan hati, biar pelanggan datang lagi.&rdquo; ☕
-          </p>
-
-          <div className="mt-12 flex justify-center gap-2">
-            <div className="w-16 h-1 bg-orange-500 rounded-full shadow-[0_0_10px_rgba(249,115,22,0.5)]"></div>
-            <div className="w-4 h-1 bg-slate-500 rounded-full"></div>
-            <div className="w-4 h-1 bg-slate-500 rounded-full"></div>
-          </div>
-        </div>
-      </div>
-
-      {/* --- BAGIAN KANAN: FORM LOGIN --- */}
-      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 lg:p-16 bg-white">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-left">
-            <h2 className="text-3xl font-bold text-slate-900">Selamat Datang! 👋</h2>
-            <p className="text-slate-500 mt-2">Masuk untuk mulai mengelola Warkop Agam Nusantara.</p>
-          </div>
-
-          <form className="space-y-6" onSubmit={handleSubmit} noValidate>
-            <div className="space-y-5">
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-orange-500 text-slate-400">
-                    <User size={18} />
-                  </div>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className={`block w-full pl-10 pr-4 py-3 bg-white border ${
-                      errors.email ? "border-red-500 focus:ring-red-200" : "border-slate-200 focus:border-orange-500 focus:ring-orange-100"
-                    } rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 transition-all duration-200`}
-                    placeholder="Masukkan email"
-                    disabled={isLoading}
-                    autoComplete="username"
-                  />
-                </div>
-                {errors.email && <p className="mt-1 text-xs text-red-500 font-medium ml-1">{errors.email}</p>}
-              </div>
-
-              {/* Password */}
-              <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-sm font-medium text-slate-700">Password</label>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotPassword(true)}
-                    className="text-xs font-medium text-orange-600 hover:text-orange-700 hover:underline focus:outline-none focus:ring-2 focus:ring-orange-200 rounded px-1.5 py-0.5 transition-all duration-200"
-                    disabled={isLoading}
-                  >
-                    Lupa password?
-                  </button>
-                </div>
-                <div className="relative group">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none transition-colors group-focus-within:text-orange-500 text-slate-400">
-                    <Lock size={18} />
-                  </div>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className={`block w-full pl-10 pr-4 py-3 bg-white border ${
-                      errors.password ? "border-red-500 focus:ring-red-200" : "border-slate-200 focus:border-orange-500 focus:ring-orange-100"
-                    } rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 transition-all duration-200`}
-                    placeholder="••••••••"
-                    disabled={isLoading}
-                    autoComplete="current-password"
-                  />
-                </div>
-                {errors.password && <p className="mt-1 text-xs text-red-500 font-medium ml-1">{errors.password}</p>}
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full flex items-center justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-lg shadow-orange-200 text-sm font-bold text-white bg-gradient-to-r from-orange-500 to-amber-600 hover:from-orange-600 hover:to-amber-700 focus:outline-none focus:ring-4 focus:ring-orange-200 transition-all duration-200 ${
-                isLoading ? "opacity-70 cursor-not-allowed" : "hover:scale-[1.02] active:scale-[0.98]"
-              }`}
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                  <span>Loading...</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span>Masuk Sekarang</span>
-                  <ArrowRight size={18} />
-                </div>
-              )}
-            </button>
-
-            {/* Info reset password */}
-            <div className="text-center">
-              <p className="text-xs text-slate-500">
-                Jika mengalami kendala login, klik &quot;Lupa password?&quot; di atas atau hubungi admin.
-              </p>
-            </div>
-          </form>
-
-          <div className="mt-8 text-center">
-            <p className="text-xs text-slate-400">
-              © {new Date().getFullYear()} Warkop Agam Nusantara System. <br />
-              All rights reserved.
+          <div>
+            <h1 className="max-w-md text-4xl font-semibold leading-tight tracking-tight text-white">
+              Pesanan rapi, dapur lancar, pelanggan kembali.
+            </h1>
+            <p className="mt-4 max-w-md text-base leading-relaxed text-gray-300">
+              Satu sistem untuk kasir, dapur, dan manajemen — dari pemesanan lewat QR meja sampai laporan penjualan.
             </p>
           </div>
         </div>
       </div>
 
-      <style jsx>{`
-        @keyframes slideIn {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-        
-        @keyframes modalSlideIn {
-          from {
-            transform: translateY(20px) scale(0.95);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0) scale(1);
-            opacity: 1;
-          }
-        }
-      `}</style>
+      {/* Form */}
+      <div className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2 lg:px-16">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 flex items-center gap-3 lg:hidden">
+            <span className="grid h-10 w-10 place-items-center rounded-xl bg-brand-600 text-white">
+              <Coffee className="h-5 w-5" strokeWidth={2.5} />
+            </span>
+            <span className="text-sm font-semibold text-gray-900">Warkop Agam Nusantara</span>
+          </div>
+
+          <h2 className="text-3xl font-semibold tracking-tight text-gray-900">Selamat datang</h2>
+          <p className="mt-2 text-sm text-gray-500">Masuk dengan akun staf untuk melanjutkan.</p>
+
+          <form className="mt-8 space-y-5" onSubmit={handleSubmit} noValidate>
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium text-gray-700">Email</label>
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nama@email.com"
+                  disabled={isLoading}
+                  autoComplete="username"
+                  aria-invalid={!!errors.email}
+                  className={`field py-3 pl-10 ${errors.email ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}`}
+                />
+              </div>
+              {errors.email && <p className="mt-1.5 text-xs font-medium text-rose-600">{errors.email}</p>}
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
+                  disabled={isLoading}
+                  className="text-xs font-medium text-brand-700 hover:underline"
+                >
+                  Lupa password?
+                </button>
+              </div>
+              <div className="relative">
+                <Lock className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-gray-400" />
+                <input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  disabled={isLoading}
+                  autoComplete="current-password"
+                  aria-invalid={!!errors.password}
+                  className={`field py-3 pl-10 pr-11 ${errors.password ? "border-rose-400 focus:border-rose-400 focus:ring-rose-100" : ""}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  aria-label={showPassword ? "Sembunyikan password" : "Tampilkan password"}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-lg p-1.5 text-gray-400 hover:text-gray-600"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+              {errors.password && <p className="mt-1.5 text-xs font-medium text-rose-600">{errors.password}</p>}
+            </div>
+
+            <button type="submit" disabled={isLoading} className="btn-primary w-full py-3.5">
+              {isLoading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" /> Memverifikasi…
+                </>
+              ) : (
+                <>
+                  Masuk <ArrowRight className="h-4 w-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          <p className="mt-10 text-center text-xs text-gray-400">
+            © {new Date().getFullYear()} Warkop Agam Nusantara
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

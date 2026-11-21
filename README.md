@@ -1,10 +1,10 @@
 # ☕ Warkop Agam Nusantara — Sistem Kasir (POS)
 
-Next.js 16 + Prisma + MySQL + Firebase Auth. Tiga panel staf (admin, kasir, dapur) dan halaman pemesanan pelanggan lewat QR meja.
+Next.js 16 + Prisma + PostgreSQL + Firebase Auth. Tiga panel staf (admin, kasir, dapur) dan halaman pemesanan pelanggan lewat QR meja.
 
 | Role   | Halaman      | Fungsi |
 |--------|--------------|--------|
-| admin  | `/dashboard` | Laporan, kelola menu/kombo/meja, QR meja, riwayat |
+| admin  | `/dashboard` | Dashboard MIS (KPI, tren, jam sibuk, menu terlaris), Monitor Pesanan, Laporan Penjualan (ekspor CSV/cetak), riwayat, kelola menu/kombo/meja |
 | kasir  | `/cashier`   | Terima/tolak pesanan, pesanan walk-in, pembayaran, cetak struk |
 | dapur  | `/dapur`     | Antrian masak (menunggu → memasak → siap) |
 | publik | `/kasir/<token>` | Pelanggan memesan lewat QR di meja (sekali pakai) |
@@ -49,3 +49,10 @@ Lihat `.env.example`. Yang wajib:
 ## Skrip
 
 `npm run dev` · `npm run build` · `npm start` · `npm run lint` · `npm run seed`
+
+
+## Catatan perubahan terbaru
+
+- **Sesi geser**: cookie sesi diperpanjang otomatis saat polling (maks. 24 jam sejak login). Sebelumnya layar dapur yang dibiarkan menyala > 8 jam gagal update status tanpa pesan jelas.
+- **Layar dapur**: update optimistic, tombol anti-klik ganda, banner sesi berakhir/offline, bunyi pesanan baru.
+- `POST /api/orders` idempoten bila status sudah sama; `GET /api/orders` menerima `?to=`.
