@@ -52,11 +52,11 @@ Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="docs/screenshots/dapur.png" alt="Layar dapur" />
+      <img src="docs/screenshots/warkop-dapur.jpg" alt="Layar dapur" />
       <br /><sub><b>Layar Dapur</b></sub>
     </td>
     <td align="center" width="50%">
-      <img src="docs/screenshots/kasir.png" alt="Panel kasir" />
+      <img src="docs/screenshots/warkop-kasir.jpg" alt="Panel kasir" />
       <br /><sub><b>Panel Kasir</b></sub>
     </td>
   </tr>
