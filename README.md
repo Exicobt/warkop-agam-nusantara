@@ -17,6 +17,7 @@
 
 ## Daftar Isi
 
+- [Tampilan Aplikasi](#tampilan-aplikasi)
 - [Fitur](#fitur)
 - [Peran & Halaman](#peran--halaman)
 - [Alur Pesanan](#alur-pesanan)
@@ -29,6 +30,70 @@
 - [Keamanan](#keamanan)
 - [Pemecahan Masalah](#pemecahan-masalah)
 - [Skrip](#skrip)
+
+## Tampilan Aplikasi
+
+<!--
+CARA MENAMBAH GAMBAR
+1. Simpan screenshot di folder docs/screenshots/ (disarankan format .png atau .webp, lebar ~1600px).
+2. Gunakan nama file huruf kecil tanpa spasi, mis. dashboard.png, dapur.png.
+3. Ganti baris gambar di bawah, atau salin salah satu blok untuk menambah gambar baru.
+Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
+-->
+
+### Dashboard Admin
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="Dashboard admin" width="900" />
+</p>
+
+### Layar Dapur & Panel Kasir
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/dapur.png" alt="Layar dapur" />
+      <br /><sub><b>Layar Dapur</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/kasir.png" alt="Panel kasir" />
+      <br /><sub><b>Panel Kasir</b></sub>
+    </td>
+  </tr>
+</table>
+
+### Laporan & Monitor Pesanan
+
+<table>
+  <tr>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/laporan.png" alt="Laporan penjualan" />
+      <br /><sub><b>Laporan Penjualan</b></sub>
+    </td>
+    <td align="center" width="50%">
+      <img src="docs/screenshots/monitor-pesanan.png" alt="Monitor pesanan" />
+      <br /><sub><b>Monitor Pesanan</b></sub>
+    </td>
+  </tr>
+</table>
+
+### Pemesanan Pelanggan (QR Meja)
+
+<p align="center">
+  <img src="docs/screenshots/pelanggan-1.png" alt="Pilih menu" width="240" />
+  &nbsp;
+  <img src="docs/screenshots/pelanggan-2.png" alt="Keranjang pesanan" width="240" />
+  &nbsp;
+  <img src="docs/screenshots/pelanggan-3.png" alt="Pesanan terkirim" width="240" />
+</p>
+
+### Halaman Login
+
+<p align="center">
+  <img src="docs/screenshots/login.png" alt="Halaman login" width="700" />
+</p>
+
+---
 
 ## Fitur
 
@@ -91,7 +156,7 @@ Efek samping ditangani atomik di server (`src/lib/order-status.js`): meja menjad
 ### Instalasi
 
 ```bash
-git clone https://github.com/Exicobt/warkop-agam-nusantara.git
+git clone <url-repo-anda>
 cd warkop-agam-nusantara
 
 npm install
