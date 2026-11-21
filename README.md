@@ -44,7 +44,7 @@ Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
 ### Dashboard Admin
 
 <p align="center">
-  <img src="docs/screenshots/dashboard.png" alt="Dashboard admin" width="900" />
+  <img src="docs/screenshots/warkop.jpg" alt="Dashboard admin" width="900" />
 </p>
 
 ### Layar Dapur & Panel Kasir
@@ -67,11 +67,11 @@ Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
 <table>
   <tr>
     <td align="center" width="50%">
-      <img src="docs/screenshots/laporan.png" alt="Laporan penjualan" />
+      <img src="docs/screenshots/warkop-laporan.jpg" alt="Laporan penjualan" />
       <br /><sub><b>Laporan Penjualan</b></sub>
     </td>
     <td align="center" width="50%">
-      <img src="docs/screenshots/monitor-pesanan.png" alt="Monitor pesanan" />
+      <img src="docs/screenshots/warkop-monitor.jpg" alt="Monitor pesanan" />
       <br /><sub><b>Monitor Pesanan</b></sub>
     </td>
   </tr>
@@ -90,7 +90,7 @@ Tips: ukuran file < 500 KB per gambar agar README cepat dimuat.
 ### Halaman Login
 
 <p align="center">
-  <img src="docs/screenshots/login.png" alt="Halaman login" width="700" />
+  <img src="docs/screenshots/warkop-login.jpg" alt="Halaman login" width="700" />
 </p>
 
 ---
