@@ -62,42 +62,55 @@ export async function transitionOrder(basketId, nextStatus, role) {
   }
 
   const tableId = basket.customers?.table_id ?? null;
+  const hasSideEffects = nextStatus === "waiting" || nextStatus === "cancelled" || nextStatus === "finish";
 
-  const updated = await prisma.$transaction(async (tx) => {
-    // Update bersyarat: cegah race jika dua staf menekan tombol bersamaan.
-    const { count } = await tx.basket.updateMany({
+  let updated;
+
+  if (!hasSideEffects) {
+    // preparing / done (aksi dapur) tidak menyentuh tabel lain: cukup SATU query
+    // bersyarat yang atomik. Tidak memakai transaksi interaktif, sehingga tidak
+    // butuh koneksi khusus dan tidak kena error P2028 saat pool koneksi padat.
+    const { count } = await prisma.basket.updateMany({
       where: { id: basketId, status: basket.status },
       data: { status: nextStatus },
     });
-    if (count !== 1) return null;
-
-    if (tableId) {
-      if (nextStatus === "waiting") {
-        await tx.table.update({
-          where: { id: tableId },
-          data: { status: "occupied" },
+    updated = count === 1 ? await prisma.basket.findUnique({ where: { id: basketId } }) : null;
+  } else {
+    updated = await prisma.$transaction(
+      async (tx) => {
+        // Update bersyarat: cegah race jika dua staf menekan tombol bersamaan.
+        const { count } = await tx.basket.updateMany({
+          where: { id: basketId, status: basket.status },
+          data: { status: nextStatus },
         });
-      } else if (nextStatus === "cancelled" || nextStatus === "finish") {
-        await tx.table.update({
-          where: { id: tableId },
-          data: { status: "available" },
-        });
-      }
-    }
+        if (count !== 1) return null;
 
-    if (nextStatus === "finish") {
-      for (const item of basket.orders) {
-        if (!item.menu_id) continue;
-        await tx.menu_stats.upsert({
-          where: { menu_id: item.menu_id },
-          update: { quantity: { increment: item.qty } },
-          create: { menu_id: item.menu_id, quantity: item.qty },
-        });
-      }
-    }
+        if (tableId) {
+          if (nextStatus === "waiting") {
+            await tx.table.update({ where: { id: tableId }, data: { status: "occupied" } });
+          } else {
+            await tx.table.update({ where: { id: tableId }, data: { status: "available" } });
+          }
+        }
 
-    return await tx.basket.findUnique({ where: { id: basketId } });
-  });
+        if (nextStatus === "finish") {
+          for (const item of basket.orders) {
+            if (!item.menu_id) continue;
+            await tx.menu_stats.upsert({
+              where: { menu_id: item.menu_id },
+              update: { quantity: { increment: item.qty } },
+              create: { menu_id: item.menu_id, quantity: item.qty },
+            });
+          }
+        }
+
+        return await tx.basket.findUnique({ where: { id: basketId } });
+      },
+      // Default Prisma: maxWait 2 dtk. Di pooler (Supabase/pgbouncer) itu sering
+      // tidak cukup -> P2028 "Unable to start a transaction in the given time".
+      { maxWait: 10000, timeout: 15000 }
+    );
+  }
 
   if (!updated) {
     return {
